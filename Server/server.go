@@ -15,9 +15,9 @@ import (
 )
 
 func main() {
-	database := initDatabase() //creating database
-	defer database.Close() //making sure connection to database is closed after function ends
-	
+	database := initDatabase() // creating database
+	defer database.Close()     // making sure connection to database is closed after function ends
+
 	// go run main.go 9090
 	if len(os.Args) < 2 {
 		fmt.Println("Error. Give the port the server will listen on after it's name")
@@ -70,9 +70,9 @@ func handleConnection(conn net.Conn, database *sql.DB) {
 		}
 
 		fmt.Printf("requests: %s", bytes)
-		response := handleCommand(database, string(bytes)) //converting bytes to text(string)
-		line := fmt.Sprintf("%s\n", response) //line is equal to response
-		fmt.Printf("response is %s", line) //print out as a log to server
+		response := handleCommand(database, string(bytes)) // converting bytes to text(string)
+		line := fmt.Sprintf("%s\n", response)              //line is equal to response
+		fmt.Printf("response is %s", line)                 // print out as a log to server
 
 		_, err = conn.Write([]byte(line))
 		if err != nil {
@@ -101,7 +101,7 @@ func initDatabase() *sql.DB {
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	username TEXT UNIQUE NOT NULL,
 	password TEXT NOT NULL
-	);` //it's written in SQL
+	);` // it's written in SQL
 
 	_, err = database.Exec(createUsersTable)
 	if err != nil {
@@ -121,19 +121,25 @@ func handleCommand(database *sql.DB, line string) string {
 		if len(parts) != 3 {
 			return "ERROR. usage is REGISTER <username> <password>"
 		}
-
 		username, password := parts[1], parts[2]
 
-		err := createUser(database, username, password)
+		exists, err := userExists(database, username)
+		if err != nil {
+			fmt.Println("Something went wrong when checking if user exists")
+			return "ERROR. Could not register user"
+		}
+		if exists {
+			return "Username is taken"
+		}
+
+		err = createUser(database, username, password)
 		if err != nil {
 			fmt.Println("Something went wrong when registering user data")
 			return "ERROR. Could not register user"
 		}
-
 		return "User registered successfully!"
-
 	default:
-		return "Unknown command!"
+		return "Unknown command"
 	}
 }
 
@@ -153,4 +159,16 @@ func createUser(db *sql.DB, username string, password string) error {
 	)
 
 	return err
+}
+
+func userExists(db *sql.DB, username string) (bool, error) { // i actually secured that username had to be unique when creating table. but this function gives user-friendly error for client
+	var id int
+	err := db.QueryRow("SELECT id FROM users WHERE username = ?", username).Scan(&id)
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
