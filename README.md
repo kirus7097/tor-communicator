@@ -15,12 +15,12 @@ I'm a self-taught developer building toward a career in cybersecurity. I wanted 
 - **Password hashing with bcrypt** — passwords are never stored in plaintext
 - **SQLite user storage** — using parameterized queries to prevent SQL injection
 - **Concurrent connection handling** — each client connection is handled in its own goroutine
+- **Logging possible**
+- **Prefix with username next to messages**
 
 ## Roadmap
 
 This project is actively in progress. Planned next steps:
-
-- [ ] `LOGIN` command and session/auth token handling
 - [ ] Message framing (moving off newline-delimited text to a proper length-prefixed protocol)
 - [ ] Client-to-client messaging
 - [ ] End-to-end encryption for message contents
