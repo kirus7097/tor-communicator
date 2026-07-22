@@ -15,9 +15,9 @@ import (
 )
 
 func main() {
-	database := initDatabase()
-	defer database.Close()
-
+	database := initDatabase() //creating database
+	defer database.Close() //making sure connection to database is closed after function ends
+	
 	// go run main.go 9090
 	if len(os.Args) < 2 {
 		fmt.Println("Error. Give the port the server will listen on after it's name")
@@ -54,7 +54,7 @@ func main() {
 	}
 }
 
-// function creating connection. think database param is not needed?
+// function creating connection. think database param is not needed? - not anymore
 func handleConnection(conn net.Conn, database *sql.DB) {
 	defer conn.Close()
 
@@ -70,9 +70,9 @@ func handleConnection(conn net.Conn, database *sql.DB) {
 		}
 
 		fmt.Printf("requests: %s", bytes)
-		response := handleCommand(database, string(bytes))
-		line := fmt.Sprintf("%s\n", response)
-		fmt.Printf("response is %s", line)
+		response := handleCommand(database, string(bytes)) //converting bytes to text(string)
+		line := fmt.Sprintf("%s\n", response) //line is equal to response
+		fmt.Printf("response is %s", line) //print out as a log to server
 
 		_, err = conn.Write([]byte(line))
 		if err != nil {
@@ -101,7 +101,7 @@ func initDatabase() *sql.DB {
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	username TEXT UNIQUE NOT NULL,
 	password TEXT NOT NULL
-	);`
+	);` //it's written in SQL
 
 	_, err = database.Exec(createUsersTable)
 	if err != nil {
