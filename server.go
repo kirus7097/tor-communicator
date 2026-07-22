@@ -3,13 +3,21 @@ package main
 import (
 	"bufio"
 	"crypto/tls"
+	"database/sql"
 	"fmt"
 	"io"
 	"net"
 	"os"
+	"strings"
+
+	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func main() {
+	database := initDatabase()
+	defer database.Close()
+
 	// go run main.go 9090
 	if len(os.Args) < 2 {
 		fmt.Println("Error. Give the port the server will listen on after it's name")
@@ -42,11 +50,12 @@ func main() {
 			continue
 		}
 
-		go handleConnection(conn)
+		go handleConnection(conn, database)
 	}
 }
 
-func handleConnection(conn net.Conn) {
+// function creating connection. think database param is not needed?
+func handleConnection(conn net.Conn, database *sql.DB) {
 	defer conn.Close()
 
 	reader := bufio.NewReader(conn)
@@ -61,7 +70,8 @@ func handleConnection(conn net.Conn) {
 		}
 
 		fmt.Printf("requests: %s", bytes)
-		line := fmt.Sprintf("Echo: %s", bytes)
+		response := handleCommand(database, string(bytes))
+		line := fmt.Sprintf("%s\n", response)
 		fmt.Printf("response is %s", line)
 
 		_, err = conn.Write([]byte(line))
@@ -70,4 +80,77 @@ func handleConnection(conn net.Conn) {
 			return
 		}
 	}
+}
+
+// function creating database
+func initDatabase() *sql.DB {
+	database, err := sql.Open("sqlite3", "users.db")
+	if err != nil {
+		fmt.Println("Something went wrong when creating database. Details:", err)
+	}
+
+	// check connection
+	err = database.Ping()
+	if err != nil {
+		println("Something went wrong when connecting with database. Details:", err)
+		os.Exit(1) // server should close if cannot contact with a database
+	}
+
+	createUsersTable := `
+	CREATE TABLE IF NOT EXISTS users (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	username TEXT UNIQUE NOT NULL,
+	password TEXT NOT NULL
+	);`
+
+	_, err = database.Exec(createUsersTable)
+	if err != nil {
+		fmt.Println("Failed when creating users table. Details: ", err)
+	}
+	fmt.Println("Database created")
+	return database
+}
+
+func handleCommand(database *sql.DB, line string) string {
+	parts := strings.Fields(line)
+	if len(parts) == 0 {
+		return "Command can't be empty"
+	}
+	switch parts[0] {
+	case "REGISTER":
+		if len(parts) != 3 {
+			return "ERROR. usage is REGISTER <username> <password>"
+		}
+
+		username, password := parts[1], parts[2]
+
+		err := createUser(database, username, password)
+		if err != nil {
+			fmt.Println("Something went wrong when registering user data")
+			return "ERROR. Could not register user"
+		}
+
+		return "User registered successfully!"
+
+	default:
+		return "Unknown command!"
+	}
+}
+
+func createUser(db *sql.DB, username string, password string) error {
+	hash, err := bcrypt.GenerateFromPassword(
+		[]byte(password),
+		bcrypt.DefaultCost,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(
+		"INSERT INTO users(username, password) VALUES (?, ?)",
+		username,
+		string(hash),
+	)
+
+	return err
 }
