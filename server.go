@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
@@ -14,9 +15,19 @@ func main() {
 		fmt.Println("Error. Give the port the server will listen on after it's name")
 		os.Exit(1)
 	}
+	cert, err := tls.LoadX509KeyPair("server.crt", "server.key")
+	if err != nil {
+		fmt.Println("Failed to create a certificate or load a key. Details: ", err)
+		os.Exit(1)
+	}
+
+	config := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		// MinVersion: tls.VersionTLS13, - could use it if i wanted to use only the stronger TLS version, but not every browser or client supports it. TLS 1.2 is still secure
+	}
 
 	port := fmt.Sprintf(":%s", os.Args[1])
-	listener, err := net.Listen("tcp", port)
+	listener, err := tls.Listen("tcp", port, config)
 	if err != nil {
 		fmt.Println("Failed to create listener. Details:", err)
 		os.Exit(1)
