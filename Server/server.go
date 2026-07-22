@@ -57,9 +57,8 @@ func main() {
 // function creating connection. think database param is not needed? - not anymore
 func handleConnection(conn net.Conn, database *sql.DB) {
 	defer conn.Close()
-
 	reader := bufio.NewReader(conn)
-
+	currentUser := ""
 	for {
 		bytes, err := reader.ReadBytes(byte('\n'))
 		if err != nil {
@@ -68,12 +67,10 @@ func handleConnection(conn net.Conn, database *sql.DB) {
 			}
 			return
 		}
-
-		fmt.Printf("requests: %s", bytes)
-		response := handleCommand(database, string(bytes)) // converting bytes to text(string)
-		line := fmt.Sprintf("%s\n", response)              //line is equal to response
-		fmt.Printf("response is %s", line)                 // print out as a log to server
-
+		fmt.Printf("%srequests: %s", prefix(currentUser), bytes)
+		response := handleCommand(database, string(bytes), &currentUser) // converting bytes to text(string)
+		line := fmt.Sprintf("%s\n", response)                            //line is equal to response
+		fmt.Printf("%sresponse is %s", prefix(currentUser), line)        // print out as a log to server
 		_, err = conn.Write([]byte(line))
 		if err != nil {
 			fmt.Println("failed to write data, err: ", err)
@@ -111,7 +108,7 @@ func initDatabase() *sql.DB {
 	return database
 }
 
-func handleCommand(database *sql.DB, line string) string {
+func handleCommand(database *sql.DB, line string, currentUser *string) string {
 	parts := strings.Fields(line)
 	if len(parts) == 0 {
 		return "Command can't be empty"
@@ -129,7 +126,7 @@ func handleCommand(database *sql.DB, line string) string {
 			return "ERROR. Could not register user"
 		}
 		if exists {
-			return "Username is taken"
+			return "ERROR. Username is taken"
 		}
 
 		err = createUser(database, username, password)
@@ -138,8 +135,23 @@ func handleCommand(database *sql.DB, line string) string {
 			return "ERROR. Could not register user"
 		}
 		return "User registered successfully!"
+	case "LOGIN":
+		if len(parts) != 3 {
+			return "ERROR. usage is LOGIN <username> <password>"
+		}
+		username, password := parts[1], parts[2]
+		ok, err := authenticateUser(database, username, password)
+		if err != nil {
+			fmt.Println("Something went wrong when logging in")
+			return "ERROR. Could not log in"
+		}
+		if !ok {
+			return "ERROR. Invalid username or password"
+		}
+		*currentUser = username
+		return fmt.Sprintf("You are now logged as %s", username)
 	default:
-		return "Unknown command"
+		return "Unknown command!"
 	}
 }
 
