@@ -15,14 +15,18 @@ import (
 )
 
 func main() {
-	database := initDatabase() // creating database
-	defer database.Close()     // making sure connection to database is closed after function ends
-
 	// go run main.go 9090
 	if len(os.Args) < 2 {
 		fmt.Println("Error. Give the port the server will listen on after it's name")
 		os.Exit(1)
 	}
+
+	// note - messageDB is for messages, regular database for users and their passwords
+	messageDB := initMessagesDatabase() // creates database for messages
+	defer messageDB.Close()             // making sure the connection is closed after function ends
+	database := initDatabase()          // creating database for users and passwords
+	defer database.Close()
+
 	cert, err := tls.LoadX509KeyPair("server.crt", "server.key")
 	if err != nil {
 		fmt.Println("Failed to create a certificate or load a key. Details: ", err)
@@ -50,12 +54,12 @@ func main() {
 			continue
 		}
 
-		go handleConnection(conn, database)
+		go handleConnection(conn, database, messageDB)
 	}
 }
 
 // function creating connection. think database param is not needed? - not anymore
-func handleConnection(conn net.Conn, database *sql.DB) {
+func handleConnection(conn net.Conn, database *sql.DB, messageDB *sql.DB) {
 	defer conn.Close()
 	reader := bufio.NewReader(conn)
 	currentUser := ""
@@ -68,9 +72,9 @@ func handleConnection(conn net.Conn, database *sql.DB) {
 			return
 		}
 		fmt.Printf("%srequests: %s", prefix(currentUser), bytes)
-		response := handleCommand(database, string(bytes), &currentUser) // converting bytes to text(string)
-		line := fmt.Sprintf("%s\n", response)                            //line is equal to response
-		fmt.Printf("%sresponse is %s", prefix(currentUser), line)        // print out as a log to server
+		response := handleCommand(database, messageDB, string(bytes), &currentUser) // converting bytes to text(string)
+		line := fmt.Sprintf("%s\n", response)                                       //line is equal to response
+		fmt.Printf("%sresponse is %s", prefix(currentUser), line)                   // print out as a log to server
 		_, err = conn.Write([]byte(line))
 		if err != nil {
 			fmt.Println("failed to write data, err: ", err)
@@ -110,7 +114,7 @@ func initDatabase() *sql.DB {
 	return database
 }
 
-func handleCommand(database *sql.DB, line string, currentUser *string) string {
+func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser *string) string {
 	parts := strings.Fields(line)
 	if len(parts) == 0 {
 		return "Command can't be empty"
@@ -154,7 +158,12 @@ func handleCommand(database *sql.DB, line string, currentUser *string) string {
 		return fmt.Sprintf("You are now logged as %s", username)
 	default:
 		if currentUser != nil && *currentUser != "" {
-			return handleTexts(line)
+			err := handleTexts(messageDB, *currentUser, line)
+			if err != nil {
+				fmt.Println("Failed to save message:", err)
+				return "ERROR. Could not save message"
+			}
+			return "Message sent!"
 		}
 		return "Unknown command!"
 	}
