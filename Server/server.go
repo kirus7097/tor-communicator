@@ -84,6 +84,7 @@ func initDatabase() *sql.DB {
 	database, err := sql.Open("sqlite3", "users.db")
 	if err != nil {
 		fmt.Println("Something went wrong when creating database. Details:", err)
+		os.Exit(1)
 	}
 
 	// check connection
@@ -103,6 +104,7 @@ func initDatabase() *sql.DB {
 	_, err = database.Exec(createUsersTable)
 	if err != nil {
 		fmt.Println("Failed when creating users table. Details: ", err)
+		os.Exit(1)
 	}
 	fmt.Println("Database created")
 	return database
@@ -151,6 +153,9 @@ func handleCommand(database *sql.DB, line string, currentUser *string) string {
 		*currentUser = username
 		return fmt.Sprintf("You are now logged as %s", username)
 	default:
+		if currentUser != nil && *currentUser != "" {
+			return handleTexts(line)
+		}
 		return "Unknown command!"
 	}
 }
