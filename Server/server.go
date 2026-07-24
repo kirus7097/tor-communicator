@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func main() {
@@ -125,22 +124,8 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 			return "ERROR. usage is REGISTER <username> <password>"
 		}
 		username, password := parts[1], parts[2]
-
-		exists, err := userExists(database, username)
-		if err != nil {
-			fmt.Println("Something went wrong when checking if user exists")
-			return "ERROR. Could not register user"
-		}
-		if exists {
-			return "ERROR. Username is taken"
-		}
-
-		err = createUser(database, username, password)
-		if err != nil {
-			fmt.Println("Something went wrong when registering user data")
-			return "ERROR. Could not register user"
-		}
-		return "User registered successfully!"
+		registerUser(database, username, password)
+		return "User registered!"
 	case "LOGIN":
 		if len(parts) != 3 {
 			return "ERROR. usage is LOGIN <username> <password>"
@@ -167,24 +152,6 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 		}
 		return "Unknown command!"
 	}
-}
-
-func createUser(db *sql.DB, username string, password string) error {
-	hash, err := bcrypt.GenerateFromPassword(
-		[]byte(password),
-		bcrypt.DefaultCost,
-	)
-	if err != nil {
-		return err
-	}
-
-	_, err = db.Exec(
-		"INSERT INTO users(username, password) VALUES (?, ?)",
-		username,
-		string(hash),
-	)
-
-	return err
 }
 
 func userExists(db *sql.DB, username string) (bool, error) { // i actually secured that username had to be unique when creating table. but this function gives user-friendly error for client
