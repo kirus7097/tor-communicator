@@ -23,7 +23,10 @@ func main() {
 		os.Exit(1)
 	}
 	defer conn.Close()
-	fmt.Println("Securely connected. Data should be encrypted from now on and not possible to eavesdrop through Wireshark")
+	fmt.Println("Welcome to the Tor Communicator.")
+	fmt.Println("Pick an otpion: ")
+	fmt.Println("[1] Register user")
+	fmt.Println("[2] Log in")
 	reader := bufio.NewReader(os.Stdin)
 	currentUser := ""
 	for {
