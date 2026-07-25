@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"os"
 	"strings"
@@ -14,8 +15,18 @@ func main() {
 		os.Exit(1)
 	}
 	server := os.Args[1]
+	caCert, err := os.ReadFile("ca.crt")
+	if err != nil {
+		fmt.Println("You don't have certificate")
+		os.Exit(1)
+	}
+
+	roots := x509.NewCertPool()
+	roots.AppendCertsFromPEM(caCert)
+
 	config := &tls.Config{
-		InsecureSkipVerify: true, // it is not secure as the client doesn't really check if the cert is genuine. not for production, but for development okay
+		RootCAs:    roots,
+		ServerName: "192.168.18.2",
 	}
 	conn, err := tls.Dial("tcp", server, config)
 	if err != nil {
