@@ -1,22 +1,20 @@
 # tor-communicator
+Client-server messaging application with encryption in Go language, developed as a hands-on experience in applied cryptography and network security. In the future, it is supposed to be able to route the connection via Tor in order to secure metadata and investigate end-to-end encryption between clients.
 
-A TLS-encrypted client-server communication app written in Go, built as a hands-on learning project in applied cryptography and network security. The long-term goal is to route traffic through Tor for metadata protection, and to explore end-to-end encryption between clients.
-
-This is an educational project — I'm learning Go, network programming, and security concepts as I build it, and documenting that process along the way.
+It is a learning project – I am learning Go language, network programming and security principles while building it.
 
 ## Why I built this
-
-I'm a self-taught developer building toward a career in cybersecurity. I wanted a project that would force me to actually implement the security concepts I was reading about, rather than just read theory — things like TLS handshakes, password hashing, and safe database queries.
+I am an self-thought software developer aspiring for a future in the field of cyber security. I was seeking something which would compel me to apply the principles of security which I was reading about rather than only having theoretical knowledge of TLS handshakes, hash functions for passwords, etc.
 
 ## Current features
 
-- **TLS-encrypted connections** — the server only accepts connections secured with TLS (cert/key based)
-- **User registration** — clients can register a username and password
-- **Password hashing with bcrypt** — passwords are never stored in plaintext
-- **SQLite user storage** — using parameterized queries to prevent SQL injection
-- **Concurrent connection handling** — each client connection is handled in its own goroutine
-- **Logging possible**
-- **Prefix with username next to messages**
+- **TLS-encrypted connections** — TLS-only connections are allowed (based on cert/key)
+- **User registration** — user can register his/her credentials (username + password)
+- **Passwords are hashed using bcrypt** — no plaintext passwords are stored
+- **SQLite user storage** — with parameterized queries, to avoid SQL-injection
+- **Support for concurrent connections** — each connection is processed separately in separate goroutines
+- **Logging could be provided**
+- **Messages prefixed with username**
 
 ## Roadmap
 
@@ -56,11 +54,11 @@ Once the server is running, connect to it with `client.go`, and register:
 
 ## What I've learned so far
 
-- How TLS handshakes and certificate loading work in practice, not just in theory
-- Why password hashing algorithms like bcrypt exist and how they differ from plain hashing
-- How to prevent SQL injection using parameterized queries
-- The basics of concurrent connection handling with goroutines
-- Why committing secrets (like private keys) to version control is a real risk, not just a rule
+- An example of the TLS handshake process in practice, beyond just theory
+- The reason for bcrypt and other types of password hashing and how it differs from regular hashing
+- Techniques to mitigate SQL injection with the use of prepared statements 
+- The fundamentals of concurrent connections management with the use of goroutines
+- Committing sensitive information such as your private keys to Git as a security hazard
 
 ## Disclaimer
-This is a learning project and has **not** been security-audited. It is not intended for production use or to protect real anonymity/security needs. If you're looking for a battle-tested anonymous communication tool, use something like [Signal](https://signal.org/) or the [Tor Browser](https://www.torproject.org/) directly.
+It is a learning exercise and **has not** gone through any kind of security audit yet. It is not meant for production purposes or for securing real anonymity/security. If you want a tried-and-tested method of anonymous communication, you should go for [Signal](https://signal.org/) or the [Tor Browser](https://www.torproject.org/).
