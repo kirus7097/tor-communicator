@@ -16,7 +16,7 @@ import (
 func main() {
 	// go run main.go 9090
 	if len(os.Args) < 2 {
-		fmt.Println("Error. Give the port the server will listen on after it's name")
+		fmt.Println("Missing port. Give port after program name.")
 		os.Exit(1)
 	}
 
@@ -121,23 +121,23 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 	switch parts[0] {
 	case "REGISTER":
 		if len(parts) != 3 {
-			return "ERROR. usage is REGISTER <username> <password>"
+			return "Wrong format. usage is REGISTER <username> <password>"
 		}
 		username, password := parts[1], parts[2]
 		registerUser(database, username, password)
 		return "User registered!"
 	case "LOGIN":
 		if len(parts) != 3 {
-			return "ERROR. usage is LOGIN <username> <password>"
+			return "Wrong. Usage is LOGIN <username> <password>"
 		}
 		username, password := parts[1], parts[2]
 		ok, err := authenticateUser(database, username, password)
 		if err != nil {
 			fmt.Println("Something went wrong when logging in")
-			return "ERROR. Could not log in"
+			return "Sorry. Cannot log in at the moment. Please try again later"
 		}
 		if !ok {
-			return "ERROR. Invalid username or password"
+			return "Invalid username or password"
 		}
 		*currentUser = username
 		return fmt.Sprintf("You are now logged as %s", username)
@@ -146,7 +146,7 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 			err := handleTexts(messageDB, *currentUser, line)
 			if err != nil {
 				fmt.Println("Failed to save message:", err)
-				return "ERROR. Could not save message"
+				return "Could not save message"
 			}
 			return "Message sent!"
 		}
