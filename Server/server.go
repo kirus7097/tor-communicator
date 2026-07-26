@@ -91,11 +91,10 @@ func initDatabase() *sql.DB {
 	}
 
 	createUsersTable := `
-CREATE TABLE IF NOT EXISTS messages(
+CREATE TABLE IF NOT EXISTS users(
 id INTEGER PRIMARY KEY AUTOINCREMENT,
-username TEXT NOT NULL,
-receiver TEXT NOT NULL,
-message TEXT NOT NULL
+username TEXT NOT NULL UNIQUE,
+password TEXT NOT NULL
 );`
 
 	_, err = database.Exec(createUsersTable)
@@ -184,7 +183,7 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 			conn.Write([]byte("This user doesn't exist\n"))
 			return
 		}
-		err = sendMessage(messageDB, *currentUser, receiver, message)
+		err = sendMessage(messageDB, *currentUser, receiver, message, conn)
 		if err != nil {
 			conn.Write([]byte("Could not send message\n"))
 			return
@@ -192,17 +191,25 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 		conn.Write([]byte("Message sent\n"))
 		return
 
-	default:
+	case "*READ":
 		if *currentUser == "" {
 			conn.Write([]byte("Login first!\n"))
 			return
 		}
-		err := handleTexts(messageDB, *currentUser, line)
+		messages, err := getMessages(messageDB, *currentUser)
 		if err != nil {
-			fmt.Println("Failed to save message:", err)
-			conn.Write([]byte("Could not save message\n"))
+			conn.Write([]byte("Could not fetch messages\n"))
 			return
 		}
+		if messages == "" {
+			conn.Write([]byte("No messages\n"))
+			return
+		}
+		conn.Write([]byte(messages))
+		return
+
+	default:
+		conn.Write([]byte("Unknown command\n"))
 		return
 	}
 }
