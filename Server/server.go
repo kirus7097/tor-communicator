@@ -141,6 +141,9 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 		}
 		*currentUser = username
 		return fmt.Sprintf("You are now logged as %s", username)
+	case "LOGOUT":
+		*currentUser = ""
+		return "Logged out"
 	default:
 		if currentUser != nil && *currentUser != "" {
 			err := handleTexts(messageDB, *currentUser, line)
@@ -150,7 +153,7 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 			}
 			return "Message sent!"
 		}
-		return "Unknown command!"
+		return "Login first!"
 	}
 }
 
