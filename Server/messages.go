@@ -34,11 +34,12 @@ func initMessagesDatabase() *sql.DB {
 	}
 
 	createMessagesTable := `
-	CREATE TABLE IF NOT EXISTS messages(
-	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	username TEXT NOT NULL,
-	message TEXT NOT NULL
-	);`
+CREATE TABLE IF NOT EXISTS messages(
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+username TEXT NOT NULL,
+receiver TEXT NOT NULL,
+message TEXT NOT NULL
+);`
 
 	_, err = database.Exec(createMessagesTable)
 	if err != nil {
@@ -46,4 +47,15 @@ func initMessagesDatabase() *sql.DB {
 	}
 	fmt.Println("Database for messages created")
 	return database
+}
+
+func sendMessage(db *sql.DB, sender string, receiver string, message string) error {
+	_, err := db.Exec(
+		"INSERT INTO messages(username, receiver, message) VALUES (?, ?, ?)",
+		sender, receiver, message,
+	)
+	if err != nil {
+		fmt.Println("Failed to insert message into database:", err)
+	}
+	return err
 }

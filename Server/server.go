@@ -71,14 +71,7 @@ func handleConnection(conn net.Conn, database *sql.DB, messageDB *sql.DB) {
 			return
 		}
 		fmt.Printf("%srequests: %s", prefix(currentUser), bytes)
-		response := handleCommand(database, messageDB, string(bytes), &currentUser) // converting bytes to text(string)
-		line := fmt.Sprintf("%s\n", response)                                       //line is equal to response
-		fmt.Printf("%sresponse is %s", prefix(currentUser), line)                   // print out as a log to server
-		_, err = conn.Write([]byte(line))
-		if err != nil {
-			fmt.Println("failed to write data, err: ", err)
-			return
-		}
+		handleCommand(database, messageDB, string(bytes), &currentUser, conn) // converting bytes to text(string)
 	}
 }
 
@@ -98,11 +91,12 @@ func initDatabase() *sql.DB {
 	}
 
 	createUsersTable := `
-	CREATE TABLE IF NOT EXISTS users (
-	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	username TEXT UNIQUE NOT NULL,
-	password TEXT NOT NULL
-	);` // it's written in SQL
+CREATE TABLE IF NOT EXISTS messages(
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+username TEXT NOT NULL,
+receiver TEXT NOT NULL,
+message TEXT NOT NULL
+);`
 
 	_, err = database.Exec(createUsersTable)
 	if err != nil {
@@ -113,74 +107,103 @@ func initDatabase() *sql.DB {
 	return database
 }
 
-func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser *string) string {
+func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser *string, conn net.Conn) {
 	if currentUser == nil {
-		return "Internal server error"
+		conn.Write([]byte("Internal server error\n"))
+		return
 	}
-
 	parts := strings.Fields(line)
 	if len(parts) == 0 {
-		return "Command can't be empty"
+		conn.Write([]byte("Command can't be empty\n"))
+		return
 	}
-
 	switch parts[0] {
-
 	case "REGISTER":
 		if len(parts) != 3 {
-			return "Wrong format. Usage is REGISTER <username> <password>"
+			conn.Write([]byte("Wrong format. Usage is REGISTER <username> <password>\n"))
+			return
 		}
-
 		if *currentUser != "" {
-			return "Log out to register a new user"
+			conn.Write([]byte("Log out to register a new user\n"))
+			return
 		}
-
 		username, password := parts[1], parts[2]
-		return registerUser(database, username, password)
+		conn.Write([]byte(registerUser(database, username, password) + "\n"))
+		return
 
 	case "LOGIN":
 		if len(parts) != 3 {
-			return "Wrong format. Usage is LOGIN <username> <password>"
+			conn.Write([]byte("Wrong format. Usage is LOGIN <username> <password>\n"))
+			return
 		}
-
 		if *currentUser != "" {
-			return "Already logged in"
+			conn.Write([]byte("Already logged in\n"))
+			return
 		}
-
 		username, password := parts[1], parts[2]
-
 		ok, err := authenticateUser(database, username, password)
 		if err != nil {
 			fmt.Println("Something went wrong when logging in:", err)
-			return "Sorry. Cannot log in at the moment. Please try again later"
+			conn.Write([]byte("Sorry. Cannot log in at the moment. Please try again later\n"))
+			return
 		}
-
 		if !ok {
-			return "Invalid username or password"
+			conn.Write([]byte("Invalid username or password\n"))
+			return
 		}
-
 		*currentUser = username
-		return prefix(*currentUser) + fmt.Sprintf("You are now logged in as %s", username)
+		conn.Write([]byte("Logged in successfully\n"))
+		return
 
 	case "LOGOUT":
 		if *currentUser == "" {
-			return "You are not logged in"
+			conn.Write([]byte("You are not logged in\n"))
+			return
 		}
-
 		*currentUser = ""
-		return "Logged out"
+		conn.Write([]byte("Logged out\n"))
+		return
+
+	case "MSG":
+		if *currentUser == "" {
+			conn.Write([]byte("Login first!\n"))
+			return
+		}
+		if len(parts) < 3 {
+			conn.Write([]byte("Wrong format. Usage is MSG <username> <message>\n"))
+			return
+		}
+		receiver := parts[1]
+		message := strings.Join(parts[2:], " ")
+		exists, err := userExists(database, receiver)
+		if err != nil {
+			conn.Write([]byte("Error checking user\n"))
+			return
+		}
+		if !exists {
+			conn.Write([]byte("This user doesn't exist\n"))
+			return
+		}
+		err = sendMessage(messageDB, *currentUser, receiver, message)
+		if err != nil {
+			conn.Write([]byte("Could not send message\n"))
+			return
+		}
+		conn.Write([]byte("Message sent\n"))
+		return
 
 	default:
 		if *currentUser == "" {
-			return "Login first!"
+			conn.Write([]byte("Login first!\n"))
+			return
 		}
-
 		err := handleTexts(messageDB, *currentUser, line)
 		if err != nil {
 			fmt.Println("Failed to save message:", err)
-			return "Could not save message"
+			conn.Write([]byte("Could not save message\n"))
+			return
 		}
-
-		return "Message sent!"
+		return
 	}
 }
 
