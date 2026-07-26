@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"fmt"
 	"os"
-	"strings"
 )
 
 func main() {
@@ -38,9 +37,7 @@ func main() {
 	fmt.Println("Register usage: REGISTER <username> <password>")
 	fmt.Println("Login usage: LOGIN <username> <password>")
 	reader := bufio.NewReader(os.Stdin)
-	currentUser := ""
 	for {
-		fmt.Printf("%s> ", prefix(currentUser))
 		message, err := reader.ReadString('\n')
 		if err != nil {
 			return // so it won't stop and keep doing
@@ -59,18 +56,5 @@ func main() {
 		reply := string(response[:n])
 		fmt.Println("Server: ", reply)
 
-		if strings.HasPrefix(reply, "You are now logged as ") {
-			parts := strings.Fields(message)
-			if len(parts) == 3 && parts[0] == "LOGIN" {
-				currentUser = parts[1]
-			}
-		}
 	}
-}
-
-func prefix(currentUser string) string {
-	if currentUser == "" {
-		return ""
-	}
-	return fmt.Sprintf("(%s) ", currentUser)
 }
