@@ -114,46 +114,73 @@ func initDatabase() *sql.DB {
 }
 
 func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser *string) string {
+	if currentUser == nil {
+		return "Internal server error"
+	}
+
 	parts := strings.Fields(line)
 	if len(parts) == 0 {
 		return "Command can't be empty"
 	}
+
 	switch parts[0] {
+
 	case "REGISTER":
 		if len(parts) != 3 {
-			return "Wrong format. usage is REGISTER <username> <password>"
+			return "Wrong format. Usage is REGISTER <username> <password>"
 		}
+
+		if *currentUser != "" {
+			return "Log out to register a new user"
+		}
+
 		username, password := parts[1], parts[2]
-		registerUser(database, username, password)
-		return "User registered!"
+		return registerUser(database, username, password)
+
 	case "LOGIN":
 		if len(parts) != 3 {
-			return "Wrong. Usage is LOGIN <username> <password>"
+			return "Wrong format. Usage is LOGIN <username> <password>"
 		}
+
+		if *currentUser != "" {
+			return "Already logged in"
+		}
+
 		username, password := parts[1], parts[2]
+
 		ok, err := authenticateUser(database, username, password)
 		if err != nil {
-			fmt.Println("Something went wrong when logging in")
+			fmt.Println("Something went wrong when logging in:", err)
 			return "Sorry. Cannot log in at the moment. Please try again later"
 		}
+
 		if !ok {
 			return "Invalid username or password"
 		}
+
 		*currentUser = username
-		return fmt.Sprintf("You are now logged as %s", username)
+		return prefix(*currentUser) + fmt.Sprintf("You are now logged in as %s", username)
+
 	case "LOGOUT":
+		if *currentUser == "" {
+			return "You are not logged in"
+		}
+
 		*currentUser = ""
 		return "Logged out"
+
 	default:
-		if currentUser != nil && *currentUser != "" {
-			err := handleTexts(messageDB, *currentUser, line)
-			if err != nil {
-				fmt.Println("Failed to save message:", err)
-				return "Could not save message"
-			}
-			return "Message sent!"
+		if *currentUser == "" {
+			return "Login first!"
 		}
-		return "Login first!"
+
+		err := handleTexts(messageDB, *currentUser, line)
+		if err != nil {
+			fmt.Println("Failed to save message:", err)
+			return "Could not save message"
+		}
+
+		return "Message sent!"
 	}
 }
 
