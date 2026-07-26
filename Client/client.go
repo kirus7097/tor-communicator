@@ -34,8 +34,10 @@ func main() {
 	}
 	defer conn.Close()
 	fmt.Println("Welcome to the Tor Communicator.")
-	fmt.Println("Register usage: REGISTER <username> <password>")
-	fmt.Println("Login usage: LOGIN <username> <password>")
+	fmt.Println("Register usage: *REGISTER <username> <password>")
+	fmt.Println("Login usage: *LOGIN <username> <password>")
+	fmt.Println("Log out usage: *LOGOUT")
+	fmt.Println("Texting ussage: *MSG <target> <message>")
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		message, err := reader.ReadString('\n')

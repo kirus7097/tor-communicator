@@ -118,7 +118,7 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 		return
 	}
 	switch parts[0] {
-	case "REGISTER":
+	case "*REGISTER":
 		if len(parts) != 3 {
 			conn.Write([]byte("Wrong format. Usage is REGISTER <username> <password>\n"))
 			return
@@ -131,7 +131,7 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 		conn.Write([]byte(registerUser(database, username, password) + "\n"))
 		return
 
-	case "LOGIN":
+	case "*LOGIN":
 		if len(parts) != 3 {
 			conn.Write([]byte("Wrong format. Usage is LOGIN <username> <password>\n"))
 			return
@@ -155,7 +155,7 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 		conn.Write([]byte("Logged in successfully\n"))
 		return
 
-	case "LOGOUT":
+	case "*LOGOUT":
 		if *currentUser == "" {
 			conn.Write([]byte("You are not logged in\n"))
 			return
@@ -164,7 +164,7 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 		conn.Write([]byte("Logged out\n"))
 		return
 
-	case "MSG":
+	case "*MSG":
 		if *currentUser == "" {
 			conn.Write([]byte("Login first!\n"))
 			return
