@@ -9,8 +9,14 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+)
+
+const (
+	readTimeout  = 30 * time.Second
+	maxLineBytes = 8192 // hard cap on a single command/message line
 )
 
 func main() {
@@ -34,7 +40,7 @@ func main() {
 
 	config := &tls.Config{
 		Certificates: []tls.Certificate{cert},
-		// MinVersion: tls.VersionTLS13, - could use it if i wanted to use only the stronger TLS version, but not every browser or client supports it. TLS 1.2 is still secure
+		MinVersion:   tls.VersionTLS12, // explicit floor - don't rely on implicit defaults
 	}
 
 	port := fmt.Sprintf(":%s", os.Args[1])
@@ -57,22 +63,56 @@ func main() {
 	}
 }
 
-// function creating connection. think database param is not needed? - not anymore
+// function creating connection.
 func handleConnection(conn net.Conn, database *sql.DB, messageDB *sql.DB) {
 	defer conn.Close()
-	reader := bufio.NewReader(conn)
+	reader := bufio.NewReaderSize(conn, 4096)
 	currentUser := ""
 	for {
-		bytes, err := reader.ReadBytes(byte('\n'))
+		conn.SetReadDeadline(time.Now().Add(readTimeout)) // reset each loop; idle clients get dropped
+
+		bytes, err := readLimitedLine(reader, maxLineBytes)
 		if err != nil {
 			if err != io.EOF {
 				fmt.Println("Failed to read data. Details:", err)
 			}
 			return
 		}
-		fmt.Printf("%srequests: %s", prefix(currentUser), bytes)
-		handleCommand(database, messageDB, string(bytes), &currentUser, conn) // converting bytes to text(string)
+
+		fmt.Printf("%srequests: %s", prefix(currentUser), redactForLog(string(bytes)))
+		handleCommand(database, messageDB, string(bytes), &currentUser, conn)
 	}
+}
+
+// readLimitedLine reads up to '\n' but bails out with an error if the line
+// exceeds maxBytes, instead of letting bufio grow the buffer unboundedly.
+func readLimitedLine(reader *bufio.Reader, maxBytes int) ([]byte, error) {
+	var line []byte
+	for {
+		chunk, err := reader.ReadSlice('\n')
+		line = append(line, chunk...)
+		if len(line) > maxBytes {
+			// drain the rest of the oversized line so the connection isn't left mid-line
+			for err == bufio.ErrBufferFull {
+				_, err = reader.ReadSlice('\n')
+			}
+			return nil, fmt.Errorf("line too long (max %d bytes)", maxBytes)
+		}
+		if err == bufio.ErrBufferFull {
+			continue // keep reading, we haven't hit '\n' yet
+		}
+		return line, err
+	}
+}
+
+// redactForLog masks passwords in *LOGIN / *REGISTER commands before they hit stdout.
+func redactForLog(line string) string {
+	trimmed := strings.TrimRight(line, "\r\n")
+	parts := strings.Fields(trimmed)
+	if len(parts) >= 2 && (parts[0] == "*LOGIN" || parts[0] == "*REGISTER") {
+		return fmt.Sprintf("%s %s [redacted]\n", parts[0], parts[1])
+	}
+	return line
 }
 
 // function creating database
@@ -86,7 +126,7 @@ func initDatabase() *sql.DB {
 	// check connection
 	err = database.Ping()
 	if err != nil {
-		println("Something went wrong when connecting with database. Details:", err)
+		fmt.Println("Something went wrong when connecting with database. Details:", err)
 		os.Exit(1) // server should close if cannot contact with a database
 	}
 
@@ -107,10 +147,6 @@ password TEXT NOT NULL
 }
 
 func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser *string, conn net.Conn) {
-	if currentUser == nil {
-		conn.Write([]byte("Internal server error\n"))
-		return
-	}
 	parts := strings.Fields(line)
 	if len(parts) == 0 {
 		conn.Write([]byte("Command can't be empty\n"))
@@ -214,7 +250,7 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 	}
 }
 
-func userExists(db *sql.DB, username string) (bool, error) { // i actually secured that username had to be unique when creating table. but this function gives user-friendly error for client
+func userExists(db *sql.DB, username string) (bool, error) { // username is UNIQUE at the schema level; this gives a user-friendly error path for the client
 	var id int
 	err := db.QueryRow("SELECT id FROM users WHERE username = ?", username).Scan(&id)
 	if err == sql.ErrNoRows {

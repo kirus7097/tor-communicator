@@ -8,20 +8,7 @@ import (
 	"strings"
 )
 
-func handleTexts(database *sql.DB, username string, line string) error {
-	_, err := database.Exec(
-		"INSERT INTO messages(username, message) VALUES (?, ?)",
-		username,
-		line,
-	)
-	if err != nil {
-		fmt.Println("Failed to insert message into database: ", err)
-	}
-
-	return err
-}
-
-// function to create data base to store messages sent by users
+// function to create database to store messages sent by users
 func initMessagesDatabase() *sql.DB {
 	database, err := sql.Open("sqlite3", "messages.db")
 	if err != nil {
