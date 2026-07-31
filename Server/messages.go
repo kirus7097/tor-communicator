@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"net"
 	"os"
 	"strings"
 )
@@ -38,7 +37,7 @@ message TEXT NOT NULL
 	return database
 }
 
-func sendMessage(db *sql.DB, sender string, receiver string, message string, con net.Conn) error {
+func sendMessage(db *sql.DB, sender string, receiver string, message string) error {
 	_, err := db.Exec(
 		"INSERT INTO messages(username, receiver, message) VALUES (?, ?, ?)",
 		sender, receiver, message,

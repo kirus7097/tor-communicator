@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"crypto/tls"
 	"database/sql"
 	"fmt"
 	"io"
@@ -15,8 +14,8 @@ import (
 )
 
 const (
-	readTimeout  = 30 * time.Second
-	maxLineBytes = 8192 // hard cap on a single command/message line
+	readTimeout  = 30 * time.Second // time out, important for resources Usage
+	maxLineBytes = 8192             // so attakcer won't send too big data
 )
 
 func main() {
@@ -32,19 +31,8 @@ func main() {
 	database := initDatabase()          // creating database for users and passwords
 	defer database.Close()
 
-	cert, err := tls.LoadX509KeyPair("server.crt", "server.key")
-	if err != nil {
-		fmt.Println("Failed to create a certificate or load a key. Details: ", err)
-		os.Exit(1)
-	}
-
-	config := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		MinVersion:   tls.VersionTLS12, // explicit floor - don't rely on implicit defaults
-	}
-
-	port := fmt.Sprintf(":%s", os.Args[1])
-	listener, err := tls.Listen("tcp", port, config)
+	port := fmt.Sprintf("127.0.0.1:%s", os.Args[1])
+	listener, err := net.Listen("tcp", port)
 	if err != nil {
 		fmt.Println("Failed to create listener. Details:", err)
 		os.Exit(1)
@@ -69,7 +57,7 @@ func handleConnection(conn net.Conn, database *sql.DB, messageDB *sql.DB) {
 	reader := bufio.NewReaderSize(conn, 4096)
 	currentUser := ""
 	for {
-		conn.SetReadDeadline(time.Now().Add(readTimeout)) // reset each loop; idle clients get dropped
+		conn.SetReadDeadline(time.Now().Add(readTimeout)) // idle clients get dropped
 
 		bytes, err := readLimitedLine(reader, maxLineBytes)
 		if err != nil {

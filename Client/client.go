@@ -2,42 +2,44 @@ package main
 
 import (
 	"bufio"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"os"
+
+	"golang.org/x/net/proxy"
 )
 
+// TODO: temporary - move this back to a config file or CLI arg once you're past
+// the prototyping stage. Fine for now since the address isn't a secret.
+const hardcodedServer = "5jppyjmpqxcqmq4y27lw5ld24kfktlb6tn4rbzhspqyhdw7xeqrfrnid.onion:9090"
+
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("you didn't provide server ip and the port")
-		os.Exit(1)
+	server := hardcodedServer
+	if len(os.Args) >= 2 {
+		server = os.Args[1] // still allow overriding for testing against a different instance
 	}
-	server := os.Args[1]
-	caCert, err := os.ReadFile("ca.crt")
+
+	// SOCKS5 dialer pointed at the local Tor daemon's SocksPort (default 127.0.0.1:9050).
+	// This is what routes the connection through the Tor network instead of hitting
+	// the network directly - no TLS needed on top, the onion service handles that.
+	dialer, err := proxy.SOCKS5("tcp", "127.0.0.1:9050", nil, proxy.Direct)
 	if err != nil {
-		fmt.Println("You don't have certificate")
+		fmt.Println("Failed to create SOCKS5 dialer. Is Tor running? Details:", err)
 		os.Exit(1)
 	}
 
-	roots := x509.NewCertPool()
-	roots.AppendCertsFromPEM(caCert)
-
-	config := &tls.Config{
-		RootCAs:    roots,
-		ServerName: "192.168.18.2",
-	}
-	conn, err := tls.Dial("tcp", server, config)
+	conn, err := dialer.Dial("tcp", server)
 	if err != nil {
 		fmt.Println("Connection failed. Details: ", err)
 		os.Exit(1)
 	}
 	defer conn.Close()
+
 	fmt.Println("Welcome to the Tor Communicator.")
 	fmt.Println("Register usage: *REGISTER <username> <password>")
 	fmt.Println("Login usage: *LOGIN <username> <password>")
 	fmt.Println("Log out usage: *LOGOUT")
-	fmt.Println("Texting ussage: *MSG <target> <message>")
+	fmt.Println("Texting usage: *MSG <target> <message>")
+
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		message, err := reader.ReadString('\n')
@@ -57,6 +59,5 @@ func main() {
 		}
 		reply := string(response[:n])
 		fmt.Println("Server: ", reply)
-
 	}
 }
