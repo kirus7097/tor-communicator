@@ -217,7 +217,9 @@ func fetchPublicKey(
 // - read from config file
 // - ask user during setup
 // - maybe store after first connection
-const hardcodedServer = "5jppyjmpqxcqmq4y27lw5ld24kfktlb6tn6tn4rbzhspqyhdw7xeqrfrnid.onion:9090"
+// TODO
+// the prototyping stage. Fine for now since the address isn't a secret.
+const hardcodedServer = "5jppyjmpqxcqmq4y27lw5ld24kfktlb6tn4rbzhspqyhdw7xeqrfrnid.onion:9090"
 
 func main() {
 	// load existing identity or create a new one
