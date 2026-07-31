@@ -1,64 +1,103 @@
 # tor-communicator
-Client-server messaging application with encryption in Go language, developed as a hands-on experience in applied cryptography and network security. In the future, it is supposed to be able to route the connection via Tor in order to secure metadata and investigate end-to-end encryption between clients.
 
-It is a learning project – I am learning Go language, network programming and security principles while building it.
+Client-server encrypted messaging application written in Go.  
+This project is a hands-on exploration of applied cryptography, network programming, and security engineering.
+
+The goal is to build a small secure communication system while learning how concepts such as password hashing, public-key cryptography, authenticated encryption, proxy routing, and secure protocol design work in practice.
+
+This is a learning project — I am developing my Go skills and security knowledge by implementing these concepts rather than only studying them theoretically.
 
 ## Why I built this
-I am an self-thought software developer aspiring for a future in the field of cyber security. I was seeking something which would compel me to apply the principles of security which I was reading about rather than only having theoretical knowledge of TLS handshakes, hash functions for passwords, etc.
+
+I am a self-taught software developer aspiring to work in cybersecurity. I wanted a project that would force me to apply security principles in practice instead of only reading about concepts such as encryption, authentication, hashing, and network security.
+
+Building a messaging application combines many security topics together:
+- identity management
+- password storage
+- public-key cryptography
+- authenticated encryption
+- network communication
+- anonymity and metadata protection
 
 ## Current features
 
-- **TLS-encrypted connections** — TLS-only connections are allowed (based on cert/key)
-- **User registration** — user can register his/her credentials (username + password)
-- **Passwords are hashed using bcrypt** — no plaintext passwords are stored
-- **SQLite user storage** — with parameterized queries, to avoid SQL-injection
-- **Support for concurrent connections** — each connection is processed separately in separate goroutines
-- **Logging could be provided**
-- **Messages prefixed with username**
+### Authentication and user management
+
+- **User registration**
+  - Users can create accounts with a username and password
+  - Users provide a public encryption key during registration
+
+- **Password hashing with bcrypt**
+  - Passwords are never stored in plaintext
+  - Password hashes are generated using bcrypt with the default cost factor
+
+- **SQLite database storage**
+  - User information is stored locally
+  - Parameterized SQL queries are used to reduce SQL injection risks
+
+### End-to-end encrypted messaging
+
+- **Client-side message encryption**
+  - Messages are encrypted before being sent to the server
+  - The server stores only ciphertext, not plaintext messages
+
+- **Public-key cryptography**
+  - Each client generates a Curve25519 key pair
+  - Public keys are shared with the server
+  - Private keys remain locally on the client machine
+
+- **Authenticated encryption using NaCl box**
+  - Encryption provides confidentiality and authentication
+  - Each message uses a unique random nonce
+
+### Networking
+
+- **Concurrent server connections**
+  - Each client connection is handled in its own goroutine
+
+- **Tor/SOCKS5 routing support**
+  - The client can route connections through a local Tor SOCKS5 proxy
+  - The goal is to reduce exposure of client IP metadata
+
+- **Simple command-based protocol**
+  - Registration
+  - Login
+  - Logout
+  - Sending messages
+  - Reading messages
+  - Fetching public keys
+
+## Security model
+
+The current design provides:
+
+### Protected against:
+- Plaintext password storage
+- Server-side plaintext message storage
+- Simple SQL injection attacks
+- Passive observation of message contents by the server
+
+### Still visible to the server:
+- Usernames
+- Who sends messages to whom
+- Message timing
+- Connection information
+- Account activity
+
+The server is currently trusted to correctly deliver messages and provide public keys.
 
 ## Roadmap
 
-This project is actively in progress. Planned next steps:
-- [ ] Message framing (moving off newline-delimited text to a proper length-prefixed protocol)
-- [ ] Client-to-client messaging
-- [ ] End-to-end encryption for message contents
-- [ ] Tor / SOCKS proxy integration for connection-level metadata protection
-- [ ] Unit tests
-- [ ] Basic CLI client polish
+This project is actively in progress.
 
-## Getting started
+Planned improvements:
 
-### Prerequisites
-
-- [Go](https://go.dev/dl/) 1.20 or later
-- A TLS certificate and key (see below)
-
-### Generate a certificate (for local testing)
-
-```bash
-openssl req -x509 -newkey rsa:2048 -keyout server.key -out server.crt -days 365 -nodes
-```
-
-### Run the server
-
-```bash
-go run server.go <port>
-# example:
-go run server.go 9090
-```
-
-### Registering a user
-
-Once the server is running, connect to it with `client.go`, and register:
-```REGISTER <username> <password>```
-
-## What I've learned so far
-
-- An example of the TLS handshake process in practice, beyond just theory
-- The reason for bcrypt and other types of password hashing and how it differs from regular hashing
-- Techniques to mitigate SQL injection with the use of prepared statements 
-- The fundamentals of concurrent connections management with the use of goroutines
-- Committing sensitive information such as your private keys to Git as a security hazard
-
-## Disclaimer
-It is a learning exercise and **has not** gone through any kind of security audit yet. It is not meant for production purposes or for securing real anonymity/security. If you want a tried-and-tested method of anonymous communication, you should go for [Signal](https://signal.org/) or the [Tor Browser](https://www.torproject.org/).
+- [ ] Replace newline-based protocol with proper message framing
+- [ ] Add message deletion/read status handling
+- [ ] Improve key management and storage
+- [ ] Add key verification to prevent malicious public-key replacement
+- [ ] Add unit and integration tests
+- [ ] Improve CLI user experience
+- [ ] Add better error handling
+- [ ] Improve anonymity protections
+- [ ] Study and compare with production messaging protocols
