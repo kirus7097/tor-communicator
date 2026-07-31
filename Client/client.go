@@ -8,7 +8,7 @@ import (
 	"golang.org/x/net/proxy"
 )
 
-// TODO: temporary - move this back to a config file or CLI arg once you're past
+// TODO
 // the prototyping stage. Fine for now since the address isn't a secret.
 const hardcodedServer = "5jppyjmpqxcqmq4y27lw5ld24kfktlb6tn4rbzhspqyhdw7xeqrfrnid.onion:9090"
 
