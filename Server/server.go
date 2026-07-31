@@ -119,10 +119,11 @@ func initDatabase() *sql.DB {
 	}
 
 	createUsersTable := `
-CREATE TABLE IF NOT EXISTS users(
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-username TEXT NOT NULL UNIQUE,
-password TEXT NOT NULL
+CREATE TABLE  IF NOT EXISTS users(
+id INTEGER PRIMARY KEY,
+username TEXT UNIQUE,
+password TEXT NOT NULL,
+public_key TEXT NOT NULL
 );`
 
 	_, err = database.Exec(createUsersTable)
@@ -142,7 +143,7 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 	}
 	switch parts[0] {
 	case "*REGISTER":
-		if len(parts) != 3 {
+		if len(parts) != 4 {
 			conn.Write([]byte("Wrong format. Usage is REGISTER <username> <password>\n"))
 			return
 		}
@@ -150,10 +151,9 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 			conn.Write([]byte("Log out to register a new user\n"))
 			return
 		}
-		username, password := parts[1], parts[2]
-		conn.Write([]byte(registerUser(database, username, password) + "\n"))
+		username, password, publicKey := parts[1], parts[2], parts[3]
+		conn.Write([]byte(registerUser(database, username, password, publicKey) + "\n"))
 		return
-
 	case "*LOGIN":
 		if len(parts) != 3 {
 			conn.Write([]byte("Wrong format. Usage is LOGIN <username> <password>\n"))
@@ -177,7 +177,20 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 		*currentUser = username
 		conn.Write([]byte("Logged in successfully\n"))
 		return
+	case "*GETKEY":
+		if len(parts) != 2 {
+			conn.Write([]byte("Wrong format. Usage is *GETKEY <username>"))
+			return
+		}
+		username := parts[1]
 
+		key, err := getPublicKey(database, username)
+		if err != nil {
+			conn.Write([]byte("User not found\n"))
+			return
+		}
+		conn.Write([]byte(key + "\n"))
+		return
 	case "*LOGOUT":
 		if *currentUser == "" {
 			conn.Write([]byte("You are not logged in\n"))
@@ -207,7 +220,7 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 			conn.Write([]byte("This user doesn't exist\n"))
 			return
 		}
-		err = sendMessage(messageDB, *currentUser, receiver, message, conn)
+		err = sendMessage(messageDB, *currentUser, receiver, message)
 		if err != nil {
 			conn.Write([]byte("Could not send message\n"))
 			return
@@ -220,16 +233,20 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 			conn.Write([]byte("Login first!\n"))
 			return
 		}
+
 		messages, err := getMessages(messageDB, *currentUser)
 		if err != nil {
 			conn.Write([]byte("Could not fetch messages\n"))
 			return
 		}
+
 		if messages == "" {
-			conn.Write([]byte("No messages\n"))
+			conn.Write([]byte("No messages\nEND\n"))
 			return
 		}
+
 		conn.Write([]byte(messages))
+		conn.Write([]byte("END\n"))
 		return
 
 	default:

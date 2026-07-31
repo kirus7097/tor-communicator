@@ -7,7 +7,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func registerUser(database *sql.DB, registerUsername string, registerPassword string) string {
+func registerUser(database *sql.DB, registerUsername string, registerPassword string, publicKey string) string {
 	exists, err := userExists(database, registerUsername)
 	if err != nil {
 		fmt.Println("Something went wrong when checking if user exists")
@@ -27,9 +27,10 @@ func registerUser(database *sql.DB, registerUsername string, registerPassword st
 	}
 
 	_, err = database.Exec(
-		"INSERT INTO users(username, password) VALUES (?, ?)",
+		"INSERT INTO users(username, password, public_key) VALUES (?, ?, ?)",
 		registerUsername,
 		string(hash),
+		publicKey,
 	)
 	if err != nil {
 		fmt.Println("Cannot reigster user into database. Details:", err)
@@ -56,10 +57,30 @@ func authenticateUser(db *sql.DB, username string, password string) (bool, error
 	return true, nil
 }
 
+// TODO: remove this function
 // builds the "(username) " prefix used for terminal logging once someone is logged in
 func prefix(currentUser string) string {
 	if currentUser == "" {
 		return ""
 	}
 	return fmt.Sprintf("(%s) ", currentUser)
+}
+
+func getPublicKey(db *sql.DB, username string) (string, error) {
+	var publicKey string
+
+	err := db.QueryRow(
+		"SELECT public_key FROM users WHERE username = ?",
+		username,
+	).Scan(&publicKey)
+
+	if err == sql.ErrNoRows {
+		return "", fmt.Errorf("user not found")
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	return publicKey, nil
 }
