@@ -101,3 +101,5 @@ Planned improvements:
 - [ ] Add better error handling
 - [ ] Improve anonymity protections
 - [ ] Study and compare with production messaging protocols
+
+### My next small step is sorting the things to put logic of the server into smaller files. I'm working at it now as you read it.
