@@ -3,39 +3,8 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"os"
 	"strings"
 )
-
-// function to create database to store messages sent by users
-func initMessagesDatabase() *sql.DB {
-	database, err := sql.Open("sqlite3", "messages.db")
-	if err != nil {
-		fmt.Println("Something went wrong when creating database for messages")
-		os.Exit(1)
-	}
-
-	err = database.Ping()
-	if err != nil {
-		fmt.Println("Cannot reach database")
-		os.Exit(1)
-	}
-
-	createMessagesTable := `
-CREATE TABLE IF NOT EXISTS messages(
-id INTEGER PRIMARY KEY AUTOINCREMENT,
-username TEXT NOT NULL,
-receiver TEXT NOT NULL,
-message TEXT NOT NULL
-);`
-
-	_, err = database.Exec(createMessagesTable)
-	if err != nil {
-		fmt.Println("Failed when creating database for messages")
-	}
-	fmt.Println("Database for messages created")
-	return database
-}
 
 func sendMessage(db *sql.DB, sender string, receiver string, message string) error {
 	_, err := db.Exec(
