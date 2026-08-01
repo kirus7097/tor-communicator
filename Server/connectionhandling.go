@@ -24,8 +24,6 @@ func handleConnection(conn net.Conn, database *sql.DB, messageDB *sql.DB) {
 			}
 			return
 		}
-
-		fmt.Printf("%srequests: %s", prefix(currentUser), redactForLog(string(bytes)))
 		handleCommand(database, messageDB, string(bytes), &currentUser, conn)
 	}
 }
@@ -49,16 +47,6 @@ func readLimitedLine(reader *bufio.Reader, maxBytes int) ([]byte, error) {
 		}
 		return line, err
 	}
-}
-
-// redactForLog masks passwords in *LOGIN / *REGISTER commands before they hit stdout.
-func redactForLog(line string) string {
-	trimmed := strings.TrimRight(line, "\r\n")
-	parts := strings.Fields(trimmed)
-	if len(parts) >= 2 && (parts[0] == "*LOGIN" || parts[0] == "*REGISTER") {
-		return fmt.Sprintf("%s %s [redacted]\n", parts[0], parts[1])
-	}
-	return line
 }
 
 func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser *string, conn net.Conn) {
