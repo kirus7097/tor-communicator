@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log/slog"
 
 	"golang.org/x/crypto/bcrypt"
@@ -56,4 +57,23 @@ func authenticateUser(db *sql.DB, username string, password string) (bool, error
 	}
 	slog.Info("User logged in")
 	return true, nil
+}
+
+func getPublicKey(db *sql.DB, username string) (string, error) {
+	var publicKey string
+
+	err := db.QueryRow(
+		"SELECT public_key FROM users WHERE username = ?",
+		username,
+	).Scan(&publicKey)
+
+	if err == sql.ErrNoRows {
+		return "", fmt.Errorf("user not found")
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	return publicKey, nil
 }
