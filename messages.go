@@ -33,10 +33,3 @@ func getMessages(db *sql.DB, username string) (string, error) {
 	}
 	return sb.String(), rows.Err()
 }
-
-func removeMessages(db *sql.DB, username string) {
-	_, err := db.Exec("DELETE FROM messages WHERE receiver = ?", username)
-	if err != nil {
-		fmt.Println("removeMessages:", err)
-	}
-}

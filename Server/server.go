@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
@@ -18,7 +19,7 @@ const (
 func main() {
 	cert, err := tls.LoadX509KeyPair("server.crt", "server.key")
 	if err != nil {
-		fmt.Println("Failed to load certificate or the key")
+		slog.Error("Couldn't load certificate or server key")
 		os.Exit(1)
 	}
 
@@ -28,7 +29,7 @@ func main() {
 
 	// go run main.go 9090
 	if len(os.Args) < 2 {
-		fmt.Println("Missing port. Give port after program name.")
+		slog.Error("Port not provided")
 		os.Exit(1)
 	}
 
@@ -41,11 +42,11 @@ func main() {
 	port := fmt.Sprintf("127.0.0.1:%s", os.Args[1])
 	listener, err := tls.Listen("tcp", port, config)
 	if err != nil {
-		fmt.Println("Failed to create listener. Details:", err)
+		slog.Error("Failed to create listener")
 		os.Exit(1)
 	}
 	defer listener.Close()
-	fmt.Printf("Listening on %s\n", listener.Addr())
+	slog.Info("Listening", "addr", listener.Addr())
 
 	for {
 		conn, err := listener.Accept()

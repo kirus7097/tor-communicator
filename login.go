@@ -2,7 +2,7 @@ package main
 
 import (
 	"database/sql"
-	"log/slog"
+	"fmt"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -10,7 +10,7 @@ import (
 func registerUser(database *sql.DB, registerUsername string, registerPassword string, publicKey string) string {
 	exists, err := userExists(database, registerUsername)
 	if err != nil {
-		slog.Warn("Couldn't check if the user exists")
+		fmt.Println("Something went wrong when checking if user exists")
 		return "Sorry. Cannot reigster user. Try again later"
 	}
 	if exists {
@@ -22,7 +22,7 @@ func registerUser(database *sql.DB, registerUsername string, registerPassword st
 		bcrypt.DefaultCost,
 	)
 	if err != nil {
-		slog.Error("Couldn't save encrypted password", "err:", err)
+		fmt.Println("Cannot create user. Details:", err)
 		return "Sorry. Cannot register user. Please try again later"
 	}
 
@@ -33,7 +33,7 @@ func registerUser(database *sql.DB, registerUsername string, registerPassword st
 		publicKey,
 	)
 	if err != nil {
-		slog.Error("Cannot reigster user into database", "err:", err)
+		fmt.Println("Cannot reigster user into database. Details:", err)
 		return "Sorry. Cannot register user"
 	}
 
@@ -54,6 +54,33 @@ func authenticateUser(db *sql.DB, username string, password string) (bool, error
 	if err != nil {
 		return false, nil // wrong password, not a real error
 	}
-	slog.Info("User logged in")
 	return true, nil
+}
+
+// TODO: remove this function
+// builds the "(username) " prefix used for terminal logging once someone is logged in
+func prefix(currentUser string) string {
+	if currentUser == "" {
+		return ""
+	}
+	return fmt.Sprintf("(%s) ", currentUser)
+}
+
+func getPublicKey(db *sql.DB, username string) (string, error) {
+	var publicKey string
+
+	err := db.QueryRow(
+		"SELECT public_key FROM users WHERE username = ?",
+		username,
+	).Scan(&publicKey)
+
+	if err == sql.ErrNoRows {
+		return "", fmt.Errorf("user not found")
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	return publicKey, nil
 }
