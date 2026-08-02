@@ -55,7 +55,6 @@ func authenticateUser(db *sql.DB, username string, password string) (bool, error
 	if err != nil {
 		return false, nil // wrong password, not a real error
 	}
-	slog.Info("User logged in")
 	return true, nil
 }
 

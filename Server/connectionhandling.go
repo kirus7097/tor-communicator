@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"strings"
 	"time"
@@ -20,7 +21,7 @@ func handleConnection(conn net.Conn, database *sql.DB, messageDB *sql.DB) {
 		bytes, err := readLimitedLine(reader, maxLineBytes)
 		if err != nil {
 			if err != io.EOF {
-				fmt.Println("Failed to read data. Details:", err)
+				slog.Error("Failed to read data", "err", err)
 			}
 			return
 		}
@@ -50,6 +51,7 @@ func readLimitedLine(reader *bufio.Reader, maxBytes int) ([]byte, error) {
 }
 
 func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser *string, conn net.Conn) {
+	slog.Info("Handling Command")
 	parts := strings.Fields(line)
 	if len(parts) == 0 {
 		conn.Write([]byte("Command can't be empty\n"))
@@ -62,11 +64,13 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 			return
 		}
 		if *currentUser != "" {
+			slog.Warn("User tried to reggister while logged in")
 			conn.Write([]byte("Log out to register a new user\n"))
 			return
 		}
 		username, password, publicKey := parts[1], parts[2], parts[3]
 		conn.Write([]byte(registerUser(database, username, password, publicKey) + "\n"))
+		slog.Info("User registered")
 		return
 	case "*LOGIN":
 		if len(parts) != 3 {
@@ -80,7 +84,7 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 		username, password := parts[1], parts[2]
 		ok, err := authenticateUser(database, username, password)
 		if err != nil {
-			fmt.Println("Something went wrong when logging in:", err)
+			slog.Error("Couldn't log user in:", "err", err)
 			conn.Write([]byte("Sorry. Cannot log in at the moment. Please try again later\n"))
 			return
 		}
@@ -90,10 +94,12 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 		}
 		*currentUser = username
 		conn.Write([]byte("Logged in successfully\n"))
+		slog.Info("User logged in succesfully")
 		return
 	case "*GETKEY":
+		slog.Info("Trying to get the key...")
 		if len(parts) != 2 {
-			conn.Write([]byte("Wrong format. Usage is *GETKEY <username>"))
+			conn.Write([]byte("Wrong format. Usage is *GETKEY <username>\n"))
 			return
 		}
 		username := parts[1]
@@ -104,6 +110,7 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 			return
 		}
 		conn.Write([]byte(key + "\n"))
+		slog.Info("Key retrieved from the database. Sent back to client")
 		return
 	case "*LOGOUT":
 		if *currentUser == "" {
@@ -112,6 +119,7 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 		}
 		*currentUser = ""
 		conn.Write([]byte("Logged out\n"))
+		slog.Info("User logged out")
 		return
 
 	case "*MSG":
@@ -140,6 +148,7 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 			return
 		}
 		conn.Write([]byte("Message sent\n"))
+		slog.Info("User sent a message to another user")
 		return
 
 	case "*READ":
@@ -147,12 +156,12 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 			conn.Write([]byte("Login first!\n"))
 			return
 		}
-
 		messages, err := getMessages(messageDB, *currentUser)
 		if err != nil {
 			conn.Write([]byte("Could not fetch messages\n"))
 			return
 		}
+		slog.Info("Fetched messages")
 
 		if messages == "" {
 			conn.Write([]byte("No messages\nEND\n"))
@@ -161,8 +170,8 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 
 		conn.Write([]byte(messages))
 		conn.Write([]byte("END\n"))
-		conn.Write([]byte("Messages removed"))
-		//removeMessages(messageDB, *currentUser)
+		conn.Write([]byte("Messages removed\n"))
+		removeMessages(messageDB, *currentUser)
 		return
 
 	default:

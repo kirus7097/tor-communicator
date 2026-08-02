@@ -131,6 +131,7 @@ func decryptMessage(
 	// convert text back into bytes
 	ciphertextHexDecoded, err := hex.DecodeString(ciphertext)
 	if err != nil {
+		fmt.Println("Couldn't hex decpde the cipher text")
 		return "", err
 	}
 

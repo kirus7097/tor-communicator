@@ -26,9 +26,7 @@ func sendLine(conn net.Conn, serverReader *bufio.Reader, line string) (string, e
 
 // ask server for someone's public key
 // needed before sending encrypted message
-//
 // every user has their own public key stored on server
-// because people need it to encrypt messages to that user
 func fetchPublicKey(
 	conn net.Conn,
 	serverReader *bufio.Reader,
@@ -37,13 +35,14 @@ func fetchPublicKey(
 	reply, err := sendLine(
 		conn,
 		serverReader,
-		fmt.Sprintf("*GETKEY %s\n", target),
+		fmt.Sprintf("*GETKEY %s\n", target), // sends the *GETKEY command to server
+
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	// remove \n and spaces from server response
+	// remove enters and spaces from serve response
 	keyHex := strings.TrimSpace(reply)
 
 	// convert public key from text back to bytes

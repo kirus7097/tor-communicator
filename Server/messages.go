@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 )
 
@@ -20,6 +21,7 @@ func sendMessage(db *sql.DB, sender string, receiver string, message string) err
 func getMessages(db *sql.DB, username string) (string, error) {
 	rows, err := db.Query("SELECT username, message FROM messages WHERE receiver = ?", username)
 	if err != nil {
+		slog.Error("Failed to read messsages from the database", "err", err)
 		return "", err
 	}
 	defer rows.Close()
@@ -27,6 +29,7 @@ func getMessages(db *sql.DB, username string) (string, error) {
 	for rows.Next() {
 		var sender, message string
 		if err := rows.Scan(&sender, &message); err != nil {
+			slog.Error("Couldn't get the public key", "err", err)
 			return "", err
 		}
 		sb.WriteString(fmt.Sprintf("%s: %s\n", sender, message))
