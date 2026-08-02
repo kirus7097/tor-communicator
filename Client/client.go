@@ -275,6 +275,8 @@ func main() {
 						msg.Sender,
 						":",
 						keyErr,
+						"recieved public key:",
+						senderPub,
 					)
 					continue
 				}

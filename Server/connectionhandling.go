@@ -170,7 +170,6 @@ func handleCommand(database *sql.DB, messageDB *sql.DB, line string, currentUser
 
 		conn.Write([]byte(messages))
 		conn.Write([]byte("END\n"))
-		conn.Write([]byte("Messages removed\n"))
 		removeMessages(messageDB, *currentUser)
 		return
 
