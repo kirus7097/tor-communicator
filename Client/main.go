@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os/exec"
 
 	"torchat/CLI"
 	"torchat/Client"
@@ -26,5 +27,6 @@ func main() {
 	}
 
 	fmt.Println("Connected")
+	exec.Command("python", "gui.py").Run()
 	CLI.Run(client)
 }
