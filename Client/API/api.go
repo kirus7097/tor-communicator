@@ -2,14 +2,23 @@ package API
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
+
+	"torchat/Client"
 )
 
-type loginOrRegisterInfo struct {
+type Request struct {
 	Type     string `json:"type"`
 	Username string `json:"username"`
 	Password string `json:"password"`
+	Target   string `json:"target"`
+	Message  string `json:"message"`
+}
+
+var client *Client.Client
+
+func SetClient(c *Client.Client) {
+	client = c
 }
 
 func ApiHandler(w http.ResponseWriter, r *http.Request) {
@@ -18,18 +27,53 @@ func ApiHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
+	var req Request
+
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "Invalid JSON", 400)
 		return
 	}
-	defer r.Body.Close()
 
-	var data loginOrRegisterInfo
+	var response any
 
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+	switch req.Type {
+
+	case "login":
+		response, err = client.Login(
+			req.Username,
+			req.Password,
+		)
+
+	case "register":
+		response, err = client.Register(
+			req.Username,
+			req.Password,
+		)
+
+	case "logout":
+		response, err = client.Logout()
+
+	case "send":
+		err = client.SendMessage(
+			req.Target,
+			req.Message,
+		)
+
+		response = "sent"
+
+	case "messages":
+		response, err = client.ReadMessages()
+
+	default:
+		http.Error(w, "Unknown request", 400)
 		return
 	}
+
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	json.NewEncoder(w).Encode(response)
 }

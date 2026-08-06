@@ -17,6 +17,8 @@ func main() {
 	fmt.Println("Starting Torchat...")
 
 	client, err := Client.Connect(server)
+	api.SetClient(client)
+
 	if err != nil {
 		fmt.Println(
 			"Connection error:",
