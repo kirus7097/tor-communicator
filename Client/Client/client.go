@@ -12,10 +12,6 @@ import (
 	"torchat/Crypto"
 )
 
-// klient przechowuje informacje o polaczeniu
-// bufor do wygodnego czytania danych z polaczeniu
-// prywany klucz
-// publiczny klucz
 type Client struct {
 	Conn       net.Conn
 	Reader     *bufio.Reader

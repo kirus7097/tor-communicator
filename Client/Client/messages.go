@@ -13,7 +13,6 @@ type Message struct {
 	Ciphertext string
 }
 
-// Pobiera klucz publiczny użytkownika
 func (c *Client) GetPublicKey(
 	username string,
 ) (*[32]byte, error) {
