@@ -73,7 +73,16 @@ func (c *Client) Send(text string) (string, error) {
 		return "", err
 	}
 
-	return c.Reader.ReadString('\n')
+	reply, err := c.Reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+
+	reply = strings.TrimSpace(reply)
+	if strings.HasPrefix(reply, "ERROR") {
+		return "", fmt.Errorf(reply)
+	}
+	return reply, nil
 }
 
 func (c *Client) EncryptAndSend(

@@ -24,12 +24,18 @@ func replyToApi(code int, errorInfo string) map[string]any {
 }
 
 func writeError(w http.ResponseWriter, code int, msg string) {
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(replyToApi(code, msg))
+
+	json.NewEncoder(w).Encode(
+		replyToApi(code, msg),
+	)
 }
 
 func writeSuccess(w http.ResponseWriter, data any) {
-	w.WriteHeader(200)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
 	json.NewEncoder(w).Encode(map[string]any{
 		"status": "ok",
 		"data":   data,
@@ -43,22 +49,19 @@ func SetClient(c *Client.Client) {
 }
 
 func ApiHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	if client == nil {
-		writeError(w, 500, "Client not initialized")
-		return
-	}
-
 	switch r.Method {
-
 	case http.MethodGet:
 		writeSuccess(w, map[string]any{
-			"client": true,
+			"client": client != nil,
 		})
 		return
 
 	case http.MethodPost:
+		if client == nil {
+			writeError(w, 500, "Client not initialized")
+			return
+		}
+
 		var req Request
 
 		err := json.NewDecoder(r.Body).Decode(&req)
@@ -70,36 +73,62 @@ func ApiHandler(w http.ResponseWriter, r *http.Request) {
 		var response any
 
 		switch req.Type {
-
 		case "login":
-			response, err = client.Login(req.Username, req.Password)
+			response, err = client.Login(
+				req.Username,
+				req.Password,
+			)
 
 		case "register":
-			response, err = client.Register(req.Username, req.Password)
+			response, err = client.Register(
+				req.Username,
+				req.Password,
+			)
 
 		case "logout":
 			response, err = client.Logout()
 
 		case "send":
-			err = client.SendMessage(req.Target, req.Message)
-			response = "sent"
+			err = client.SendMessage(
+				req.Target,
+				req.Message,
+			)
+
+			if err == nil {
+				response = "sent"
+			}
 
 		case "messages":
 			response, err = client.ReadMessages()
 
 		default:
-			writeError(w, 400, "Unknown request type")
+			writeError(
+				w,
+				400,
+				"Unknown request type",
+			)
 			return
 		}
 
 		if err != nil {
-			writeError(w, 500, err.Error())
+			writeError(
+				w,
+				500,
+				err.Error(),
+			)
 			return
 		}
 
-		writeSuccess(w, response)
+		writeSuccess(
+			w,
+			response,
+		)
 		return
 	}
 
-	writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
+	writeError(
+		w,
+		http.StatusMethodNotAllowed,
+		"Method not allowed",
+	)
 }

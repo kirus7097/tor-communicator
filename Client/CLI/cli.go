@@ -63,7 +63,6 @@ func Run(c *Client.Client) {
 					"Error:",
 					err,
 				)
-
 				continue
 			}
 
