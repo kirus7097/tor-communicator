@@ -2,6 +2,12 @@ import tkinter as tk
 import requests
 import json
 
+def get_response():
+    r = requests.get("http://127.0.0.1:8080/api")
+    print(r.status_code)
+    print(r.text)
+    return r.json()
+
 def login():
     global loginName, password
     loginName = name_entry.get()
@@ -10,8 +16,8 @@ def login():
     print("Password:", password)
 
     send_login = {
-        "action": "login",
-        "loginName": loginName,
+        "type": "login",
+        "username": loginName,
         "password": password
     }
 
@@ -19,6 +25,8 @@ def login():
         requests.post("http://127.0.0.1:8080/api", json=send_login)
     except requests.exceptions.ConnectionError:
         print("Server is not running")
+
+    get_response()
 
 def register():
     global registerName, password
@@ -28,8 +36,8 @@ def register():
     print("Password:", password)
 
     send_register = {
-        "action": "register",
-        "registerName": registerName,
+        "type": "register",
+        "username": registerName,
         "password": password
     }
 
@@ -37,6 +45,7 @@ def register():
         requests.post("http://127.0.0.1:8080/api", json=send_register)
     except requests.exceptions.ConnectionError:
         print("Server is not running")
+    get_response()
 
 window = tk.Tk()
 window.title("Login / Register")
@@ -63,4 +72,3 @@ register_button = tk.Button(button_frame, text="Register", width=10, command=reg
 register_button.grid(row=0, column=1, padx=10)
 
 window.mainloop()
-

@@ -47,11 +47,9 @@ func Run(c *Client.Client) {
 		case "*REGISTER":
 
 			if len(parts) != 3 {
-
 				fmt.Println(
 					"Usage: *REGISTER <username> <password>",
 				)
-
 				continue
 			}
 
@@ -72,13 +70,10 @@ func Run(c *Client.Client) {
 			fmt.Print(reply)
 
 		case "*LOGIN":
-
 			if len(parts) != 3 {
-
 				fmt.Println(
 					"Usage: *LOGIN <username> <password>",
 				)
-
 				continue
 			}
 

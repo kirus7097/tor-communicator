@@ -15,6 +15,27 @@ type Request struct {
 	Message  string `json:"message"`
 }
 
+func replyToApi(code int, errorInfo string) map[string]any {
+	return map[string]any{
+		"status":  "error",
+		"code":    code,
+		"message": errorInfo,
+	}
+}
+
+func writeError(w http.ResponseWriter, code int, msg string) {
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(replyToApi(code, msg))
+}
+
+func writeSuccess(w http.ResponseWriter, data any) {
+	w.WriteHeader(200)
+	json.NewEncoder(w).Encode(map[string]any{
+		"status": "ok",
+		"data":   data,
+	})
+}
+
 var client *Client.Client
 
 func SetClient(c *Client.Client) {
@@ -22,58 +43,63 @@ func SetClient(c *Client.Client) {
 }
 
 func ApiHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "POST ONLY", http.StatusMethodNotAllowed)
+	w.Header().Set("Content-Type", "application/json")
+
+	if client == nil {
+		writeError(w, 500, "Client not initialized")
 		return
 	}
 
-	var req Request
+	switch r.Method {
 
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, "Invalid JSON", 400)
+	case http.MethodGet:
+		writeSuccess(w, map[string]any{
+			"client": true,
+		})
+		return
+
+	case http.MethodPost:
+		var req Request
+
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			writeError(w, 400, "Invalid JSON")
+			return
+		}
+
+		var response any
+
+		switch req.Type {
+
+		case "login":
+			response, err = client.Login(req.Username, req.Password)
+
+		case "register":
+			response, err = client.Register(req.Username, req.Password)
+
+		case "logout":
+			response, err = client.Logout()
+
+		case "send":
+			err = client.SendMessage(req.Target, req.Message)
+			response = "sent"
+
+		case "messages":
+			response, err = client.ReadMessages()
+
+		default:
+			writeError(w, 400, "Unknown request type")
+			return
+		}
+
+		if err != nil {
+			writeError(w, 500, err.Error())
+			return
+		}
+
+		writeSuccess(w, response)
 		return
 	}
 
-	var response any
-
-	switch req.Type {
-
-	case "login":
-		response, err = client.Login(
-			req.Username,
-			req.Password,
-		)
-
-	case "register":
-		response, err = client.Register(
-			req.Username,
-			req.Password,
-		)
-
-	case "logout":
-		response, err = client.Logout()
-
-	case "send":
-		err = client.SendMessage(
-			req.Target,
-			req.Message,
-		)
-
-		response = "sent"
-
-	case "messages":
-		response, err = client.ReadMessages()
-
-	default:
-		http.Error(w, "Unknown request", 400)
-		return
-	}
-
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-
-	json.NewEncoder(w).Encode(response)
+	writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
 }
