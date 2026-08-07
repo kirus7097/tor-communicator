@@ -38,7 +38,7 @@ func main() {
 		}
 	}()
 
-	startGui := exec.Command("python3", "gui.py")
+	startGui := exec.Command("python3", "GUI/gui.py")
 
 	startGui.Stdout = os.Stdout
 	startGui.Stderr = os.Stderr

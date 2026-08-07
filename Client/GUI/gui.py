@@ -108,8 +108,8 @@ def register():
             "Register",
             str(response.get("data"))
         )
-        subprocess.run([sys.executable, "GUI/chat.py"])
-
+        subprocess.Popen([sys.executable, "chat.py"])
+        window.destroy()
 window = tk.Tk()
 
 window.title("TorChat")
