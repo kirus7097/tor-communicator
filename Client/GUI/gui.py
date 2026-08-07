@@ -1,6 +1,8 @@
+import sys
 import tkinter as tk
 from tkinter import messagebox
 import requests
+import subprocess
 
 API_URL = "http://127.0.0.1:8080/api"
 
@@ -106,7 +108,7 @@ def register():
             "Register",
             str(response.get("data"))
         )
-
+        subprocess.run([sys.executable, "GUI/chat.py"])
 
 window = tk.Tk()
 
