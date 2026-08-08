@@ -1,4 +1,5 @@
 import sys
+import os
 import tkinter as tk
 from tkinter import messagebox
 import requests
@@ -108,7 +109,8 @@ def register():
             "Register",
             str(response.get("data"))
         )
-        subprocess.Popen([sys.executable, "chat.py"])
+        script_path = os.path.join(os.path.dirname(__file__), "chat.py")
+        subprocess.Popen([sys.executable, script_path])
         window.destroy()
 window = tk.Tk()
 
