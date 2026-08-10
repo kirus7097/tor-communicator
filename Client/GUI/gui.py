@@ -75,6 +75,9 @@ def login():
             "Login",
             str(response.get("data"))
         )
+        script_path = os.path.join(os.path.dirname(__file__), "chat.py")
+        subprocess.Popen([sys.executable, script_path])
+        window.destroy()
 
 
 def register():

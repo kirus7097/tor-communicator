@@ -17,6 +17,7 @@ type Client struct {
 	Reader     *bufio.Reader
 	PublicKey  *[32]byte
 	PrivateKey *[32]byte
+	Username   string
 }
 
 func Connect(server string) (*Client, error) {

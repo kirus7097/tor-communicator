@@ -73,19 +73,33 @@ func (c *Client) Login(
 	username string,
 	password string,
 ) (string, error) {
-	return c.Send(
+	response, err := c.Send(
 		fmt.Sprintf(
 			"*LOGIN %s %s\n",
 			username,
 			password,
 		),
 	)
+
+	if err != nil {
+		return "", err
+	}
+
+	c.Username = username
+	return response, nil
 }
 
 func (c *Client) Logout() (string, error) {
-	return c.Send(
+	response, err := c.Send(
 		"*LOGOUT\n",
 	)
+
+	if err != nil {
+		return "", err
+	}
+
+	c.Username = ""
+	return response, nil
 }
 
 func (c *Client) SendMessage(

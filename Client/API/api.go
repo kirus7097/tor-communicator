@@ -51,8 +51,14 @@ func SetClient(c *Client.Client) {
 func ApiHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
+		if client == nil {
+			writeError(w, 500, "Client not initialized")
+			return
+		}
+
 		writeSuccess(w, map[string]any{
-			"client": client != nil,
+			"loggedIn": client.Username != "",
+			"username": client.Username,
 		})
 		return
 
