@@ -13,6 +13,10 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
+type establishConnectionRequest struct {
+	Target string `json:"target"`
+}
+
 type sendMessageRequest struct {
 	Target  string `json:"target"`
 	Message string `json:"message"`
@@ -52,7 +56,28 @@ func SetClient(c *Client.Client) {
 }
 
 func MessagesHandler(w http.ResponseWriter, r *http.Request) {
-	// This handler is currently not implemented. It can be used to fetch messages from the server in the future.
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req sendMessageRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if err := client.SendMessage(req.Target, req.Message); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeSuccess(w, map[string]string{
+		"target":  req.Target,
+		"message": req.Message,
+	})
 }
 
 func ContactHandler(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +87,7 @@ func ContactHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req sendMessageRequest
+	var req establishConnectionRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
