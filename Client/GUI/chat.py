@@ -3,6 +3,7 @@ from tkinter import ttk, simpledialog, messagebox
 import requests
 
 L_API_URL = "http://127.0.0.1:8080/login"
+C_API_URL = "http://127.0.0.1:8080/contact"
 M_API_URL = "http://127.0.0.1:8080/messages"
 
 response = requests.get(
@@ -45,14 +46,28 @@ def send_message(event=None):
     if current_contact is None:
         return
 
-    text = message_entry.get().strip()
-    if not text:
+    message = message_entry.get().strip()
+    if not message:
         return
 
     chat_text.configure(state="normal")
-    chat_text.insert(tk.END, f"{username}: {text}\n")
+    chat_text.insert(tk.END, f"{username}: {message}\n")
     chat_text.configure(state="disabled")
     chat_text.see(tk.END)
+
+    try:
+        response = requests.post(
+            C_API_URL,
+            json={"target": current_contact, "message": message},
+            timeout=5,
+        )
+        if response.status_code != 200:
+            print(response.status_code)
+            print(response.text)
+            raise RuntimeError("Could not send message")
+    except Exception as e:
+        messagebox.showerror("Error", str(e), parent=root)
+        return
 
     message_entry.delete(0, tk.END)
 
@@ -113,6 +128,8 @@ input_frame.columnconfigure(0, weight=1)
 message_entry = tk.Entry(input_frame, font=("Arial", 12))
 message_entry.grid(row=0, column=0, sticky="ew", padx=(0, 5))
 message_entry.bind("<Return>", send_message)
+
+
 
 send_button = tk.Button(input_frame, text="Send", command=send_message)
 send_button.grid(row=0, column=1)
@@ -229,8 +246,8 @@ def add_contact():
         return
     try:
         response = requests.post(
-            M_API_URL,
-            json={"target": name, "message": "existence check"},
+            C_API_URL,
+            json={"target": name},
             timeout=5,
         )
         if response.status_code != 200:

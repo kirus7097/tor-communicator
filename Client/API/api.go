@@ -52,6 +52,10 @@ func SetClient(c *Client.Client) {
 }
 
 func MessagesHandler(w http.ResponseWriter, r *http.Request) {
+	// This handler is currently not implemented. It can be used to fetch messages from the server in the future.
+}
+
+func ContactHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", http.MethodPost)
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -65,14 +69,13 @@ func MessagesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := client.SendMessage(req.Target, req.Message); err != nil {
+	if _, err := client.GetPublicKey(req.Target); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	writeSuccess(w, map[string]string{
-		"target":  req.Target,
-		"message": req.Message,
+		"target": req.Target,
 	})
 }
 

@@ -30,6 +30,7 @@ func main() {
 	fmt.Println("Connected")
 
 	http.HandleFunc("/login", api.LoginHandler)
+	http.HandleFunc("/contact", api.ContactHandler)
 	http.HandleFunc("/messages", api.MessagesHandler)
 
 	go func() {
