@@ -23,7 +23,7 @@ if not username:
 
 current_contact = None  # z kim aktualnie rozmawiamy
 
-contacts = ["Anna", "Kuba", "Marek", "Zosia"]
+contacts = []
 
 
 def select_contact(name: str):
@@ -162,6 +162,20 @@ add_contact_button = tk.Button(
 )
 add_contact_button.grid(row=0, column=1, sticky="e")
 
+add_remove_messages_button = tk.Button(
+    contacts_header,
+    text="Remove messages",
+    font=("Arial", 10),
+    bg="#f21b0c",
+    fg = "white",
+    activebackground="#d10f00",
+    activeforeground="white",
+    bd=0,
+    width=15,
+    cursor="hand2",
+    command=lambda: remove_messages(),
+)
+add_remove_messages_button.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(5, 0))
 contacts_list = tk.Listbox(
     sidebar,
     font=("Arial", 12),
@@ -184,6 +198,19 @@ def on_contact_select(event):
         name = contacts_list.get(selection[0])
         select_contact(name)
 
+
+def remove_messages():
+    delete_mssages = messagebox.askquestion(
+        "Remove messages",
+        "Are you sure you want to remove all messages?",
+        icon="warning",
+        parent=root,
+    )
+
+    if delete_mssages == "yes":
+        messagebox.showinfo("Info", "All messages have been removed.", parent=root)
+    if delete_mssages == "no":
+        pass
 
 def add_contact():
     name = simpledialog.askstring(
