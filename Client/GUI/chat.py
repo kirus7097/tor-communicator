@@ -2,8 +2,10 @@ import tkinter as tk
 from tkinter import ttk, simpledialog, messagebox
 import requests
 
+API_URL = "http://127.0.0.1:8080/addcontact"
+
 response = requests.get(
-    "http://127.0.0.1:8080/api",
+    API_URL,
     timeout=5
 )
 
@@ -223,6 +225,19 @@ def add_contact():
 
     name = name.strip()
     if not name:
+        return
+    try:
+        response = requests.post(
+            API_URL,
+            json={"contact": name},
+            timeout=5,
+        )
+        if response.status_code != 200:
+            print(response.status_code)
+            print(response.text)
+            raise RuntimeError("Could not add contact")
+    except Exception as e:
+        messagebox.showerror("Error", str(e), parent=root)
         return
 
     if name in contacts:

@@ -30,6 +30,7 @@ func main() {
 	fmt.Println("Connected")
 
 	http.HandleFunc("/api", api.ApiHandler)
+	http.HandleFunc("/addcontact", api.AddContactHandler)
 
 	go func() {
 		err = http.ListenAndServe(":8080", nil)

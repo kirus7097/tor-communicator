@@ -138,3 +138,9 @@ func ApiHandler(w http.ResponseWriter, r *http.Request) {
 		"Method not allowed",
 	)
 }
+
+func AddContactHandler(w http.ResponseWriter, r *http.Request) {
+	writeSuccess(w, map[string]any{
+		"status": "running",
+	})
+}
