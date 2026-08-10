@@ -230,13 +230,18 @@ def add_contact():
     try:
         response = requests.post(
             M_API_URL,
-            json={"target": name},
+            json={"target": name, "message": "existence check"},
             timeout=5,
         )
+
+        messagebox.showinfo("Info", response.text, parent=root)
+
         if response.status_code != 200:
             print(response.status_code)
             print(response.text)
             raise RuntimeError("Could not add contact")
+        print(response.status_code)
+        print(response.text)
     except Exception as e:
         messagebox.showerror("Error", str(e), parent=root)
         return

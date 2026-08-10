@@ -52,21 +52,28 @@ func SetClient(c *Client.Client) {
 }
 
 func MessagesHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	var req sendMessageRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		writeError(w, 400, "Invalid JSON")
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	err = client.SendMessage(
-		req.Target,
-		req.Message,
-	)
-	if err != nil {
-		writeError(w, 500, err.Error())
+
+	if err := client.SendMessage(req.Target, req.Message); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	writeSuccess(w, "Message sent")
+
+	writeSuccess(w, map[string]string{
+		"target":  req.Target,
+		"message": req.Message,
+	})
 }
 
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -116,25 +123,25 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 			response, err = client.Logout()
 
 		/*
-		case "send":
-			var req sendMessageRequest
-			err := json.NewDecoder(r.Body).Decode(&req)
-			if err != nil {
-				writeError(w, 400, "Invalid JSON")
-				return
-			}
+			case "send":
+				var req sendMessageRequest
+				err := json.NewDecoder(r.Body).Decode(&req)
+				if err != nil {
+					writeError(w, 400, "Invalid JSON")
+					return
+				}
 
-			err = client.SendMessage(
-				req.Target,
-				req.Message,
-			)
+				err = client.SendMessage(
+					req.Target,
+					req.Message,
+				)
 
-			if err == nil {
-				response = "sent"
-			}
+				if err == nil {
+					response = "sent"
+				}
 
-		case "messages":
-			response, err = client.ReadMessages()
+			case "messages":
+				response, err = client.ReadMessages()
 		*/
 
 		default:
