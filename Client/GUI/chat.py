@@ -169,7 +169,7 @@ contacts_label.grid(row=0, column=0, sticky="w")
 
 add_contact_button = tk.Button(
     contacts_header,
-    text="New Message",
+    text="+",
     font=("Arial", 12, "bold"),
     bg="#7289da",
     fg="white",
