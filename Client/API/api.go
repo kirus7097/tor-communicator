@@ -122,28 +122,6 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		case "logout":
 			response, err = client.Logout()
 
-		/*
-			case "send":
-				var req sendMessageRequest
-				err := json.NewDecoder(r.Body).Decode(&req)
-				if err != nil {
-					writeError(w, 400, "Invalid JSON")
-					return
-				}
-
-				err = client.SendMessage(
-					req.Target,
-					req.Message,
-				)
-
-				if err == nil {
-					response = "sent"
-				}
-
-			case "messages":
-				response, err = client.ReadMessages()
-		*/
-
 		default:
 			writeError(
 				w,

@@ -233,15 +233,10 @@ def add_contact():
             json={"target": name, "message": "existence check"},
             timeout=5,
         )
-
-        messagebox.showinfo("Info", response.text, parent=root)
-
         if response.status_code != 200:
             print(response.status_code)
             print(response.text)
-            raise RuntimeError("Could not add contact")
-        print(response.status_code)
-        print(response.text)
+            raise RuntimeError("This user doesn't exist")
     except Exception as e:
         messagebox.showerror("Error", str(e), parent=root)
         return
