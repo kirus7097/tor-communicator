@@ -57,7 +57,7 @@ def send_message(event=None):
 
     try:
         response = requests.post(
-            C_API_URL,
+            M_API_URL,
             json={"target": current_contact, "message": message},
             timeout=5,
         )
