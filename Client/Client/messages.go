@@ -17,37 +17,30 @@ func (c *Client) GetPublicKey(
 	username string,
 ) (*[32]byte, error) {
 	reply, err := c.Send(
-		fmt.Sprintf(
-			"*GETKEY %s\n",
-			username,
-		),
+		fmt.Sprintf("*GETKEY %s\n", username),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	keyBytes, err := hex.DecodeString(
-		strings.TrimSpace(reply),
-	)
+	reply = strings.TrimSpace(reply)
+
+	if reply == "User not found" {
+		return nil, fmt.Errorf("user not found: %s", username)
+	}
+	keyBytes, err := hex.DecodeString(reply)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode public key: %v", err)
 	}
 
 	if len(keyBytes) != 32 {
-		return nil,
-			fmt.Errorf(
-				"invalid public key",
-			)
+		return nil, fmt.Errorf("invalid public key length: %d", len(keyBytes))
 	}
 
-	var key [32]byte
+	var pubKey [32]byte
+	copy(pubKey[:], keyBytes)
 
-	copy(
-		key[:],
-		keyBytes,
-	)
-
-	return &key, nil
+	return &pubKey, nil
 }
 
 func (c *Client) Register(

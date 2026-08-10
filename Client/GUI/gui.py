@@ -5,7 +5,7 @@ from tkinter import messagebox
 import requests
 import subprocess
 
-API_URL = "http://127.0.0.1:8080/api"
+API_URL = "http://127.0.0.1:8080/login"
 
 
 def send_request(data):
@@ -112,9 +112,6 @@ def register():
             "Register",
             str(response.get("data"))
         )
-        script_path = os.path.join(os.path.dirname(__file__), "chat.py")
-        subprocess.Popen([sys.executable, script_path])
-        window.destroy()
 window = tk.Tk()
 
 window.title("TorChat")

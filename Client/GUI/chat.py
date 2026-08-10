@@ -2,10 +2,11 @@ import tkinter as tk
 from tkinter import ttk, simpledialog, messagebox
 import requests
 
-API_URL = "http://127.0.0.1:8080/addcontact"
+L_API_URL = "http://127.0.0.1:8080/login"
+M_API_URL = "http://127.0.0.1:8080/messages"
 
 response = requests.get(
-    API_URL,
+    L_API_URL,
     timeout=5
 )
 
@@ -151,7 +152,7 @@ contacts_label.grid(row=0, column=0, sticky="w")
 
 add_contact_button = tk.Button(
     contacts_header,
-    text="+",
+    text="New Message",
     font=("Arial", 12, "bold"),
     bg="#7289da",
     fg="white",
@@ -228,8 +229,8 @@ def add_contact():
         return
     try:
         response = requests.post(
-            API_URL,
-            json={"contact": name},
+            M_API_URL,
+            json={"target": name},
             timeout=5,
         )
         if response.status_code != 200:

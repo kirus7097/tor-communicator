@@ -7,12 +7,15 @@ import (
 	"torchat/Client"
 )
 
-type Request struct {
+type loginRequest struct {
 	Type     string `json:"type"`
 	Username string `json:"username"`
 	Password string `json:"password"`
-	Target   string `json:"target"`
-	Message  string `json:"message"`
+}
+
+type sendMessageRequest struct {
+	Target  string `json:"target"`
+	Message string `json:"message"`
 }
 
 func replyToApi(code int, errorInfo string) map[string]any {
@@ -48,7 +51,25 @@ func SetClient(c *Client.Client) {
 	client = c
 }
 
-func ApiHandler(w http.ResponseWriter, r *http.Request) {
+func MessagesHandler(w http.ResponseWriter, r *http.Request) {
+	var req sendMessageRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		writeError(w, 400, "Invalid JSON")
+		return
+	}
+	err = client.SendMessage(
+		req.Target,
+		req.Message,
+	)
+	if err != nil {
+		writeError(w, 500, err.Error())
+		return
+	}
+	writeSuccess(w, "Message sent")
+}
+
+func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
 		if client == nil {
@@ -68,7 +89,7 @@ func ApiHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		var req Request
+		var req loginRequest
 
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
@@ -94,7 +115,15 @@ func ApiHandler(w http.ResponseWriter, r *http.Request) {
 		case "logout":
 			response, err = client.Logout()
 
+		/*
 		case "send":
+			var req sendMessageRequest
+			err := json.NewDecoder(r.Body).Decode(&req)
+			if err != nil {
+				writeError(w, 400, "Invalid JSON")
+				return
+			}
+
 			err = client.SendMessage(
 				req.Target,
 				req.Message,
@@ -106,6 +135,7 @@ func ApiHandler(w http.ResponseWriter, r *http.Request) {
 
 		case "messages":
 			response, err = client.ReadMessages()
+		*/
 
 		default:
 			writeError(
@@ -137,10 +167,4 @@ func ApiHandler(w http.ResponseWriter, r *http.Request) {
 		http.StatusMethodNotAllowed,
 		"Method not allowed",
 	)
-}
-
-func AddContactHandler(w http.ResponseWriter, r *http.Request) {
-	writeSuccess(w, map[string]any{
-		"status": "running",
-	})
 }
