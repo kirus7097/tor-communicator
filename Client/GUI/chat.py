@@ -29,16 +29,47 @@ current_contact = None  # z kim aktualnie rozmawiamy
 
 contacts = []
 
+def load_messages(contact):
+    try:
+        response = requests.get(
+            M_API_URL,
+            params={"target": contact},
+            timeout=5,
+        )
+
+        print("TARGET:", contact)
+        print("STATUS:", response.status_code)
+        print("BODY:", response.text)
+
+        if response.status_code != 200:
+            print(response.status_code)
+            print(response.text)
+            raise RuntimeError("Could not load messages")
+    except Exception as e:
+        messagebox.showerror("Error", str(e), parent=root)
+        return 
+
+    body = response.json()
+    data = body.get("data", {})
+    messages = data.get("messages") or []
+
+    chat_text.configure(state="normal")
+    chat_text.delete("1.0", tk.END)
+    chat_text.insert(tk.END, f"--- Talk with {contact} ---\n")
+    for msg in messages:
+        sender = msg.get("sender")
+        message = msg.get("message")
+        chat_text.insert(tk.END, f"{sender}: {message}\n")
+    chat_text.configure(state="disabled")
+    chat_text.see(tk.END)
+
+
 
 def select_contact(name: str):
-    #select current contact and update the chat window
     global current_contact
     current_contact = name
     message_with_var.set(f"Message with {name}")
-    chat_text.configure(state="normal")
-    chat_text.delete("1.0", tk.END)
-    chat_text.insert(tk.END, f"--- Talk with {name} ---\n")
-    chat_text.configure(state="disabled")
+    load_messages(name)
 
 
 def send_message(event=None):

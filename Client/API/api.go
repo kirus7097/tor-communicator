@@ -56,12 +56,18 @@ func SetClient(c *Client.Client) {
 }
 
 func MessagesHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		w.Header().Set("Allow", http.MethodPost)
+	switch r.Method {
+	case http.MethodPost:
+		handleSendMessage(w, r)
+	case http.MethodGet:
+		handleGetMessages(w, r)
+	default:
+		w.Header().Set("Allow", http.MethodPost+", "+http.MethodGet)
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
 	}
+}
 
+func handleSendMessage(w http.ResponseWriter, r *http.Request) {
 	var req sendMessageRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -77,6 +83,25 @@ func MessagesHandler(w http.ResponseWriter, r *http.Request) {
 	writeSuccess(w, map[string]string{
 		"target":  req.Target,
 		"message": req.Message,
+	})
+}
+
+func handleGetMessages(w http.ResponseWriter, r *http.Request) {
+	target := r.URL.Query().Get("target")
+	if target == "" {
+		writeError(w, http.StatusBadRequest, "missing target query parameter")
+		return
+	}
+
+	messages, err := client.GetMessages(target)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeSuccess(w, map[string]interface{}{
+		"target":   target,
+		"messages": messages,
 	})
 }
 

@@ -13,6 +13,34 @@ type Message struct {
 	Ciphertext string
 }
 
+type DecryptedMessage struct {
+	Sender  string `json:"sender"`
+	Message string `json:"message"`
+}
+
+func (c *Client) GetMessages(target string) ([]DecryptedMessage, error) {
+	raw, err := c.ReadMessages()
+	if err != nil {
+		return nil, err
+	}
+
+	var decrypted []DecryptedMessage
+
+	for _, msg := range raw {
+		plaintext, err := c.DecryptMessage(msg)
+		if err != nil {
+			return nil, err
+		}
+
+		decrypted = append(decrypted, DecryptedMessage{
+			Sender:  msg.Sender,
+			Message: plaintext,
+		})
+	}
+
+	return decrypted, nil
+}
+
 func (c *Client) GetPublicKey(
 	username string,
 ) (*[32]byte, error) {

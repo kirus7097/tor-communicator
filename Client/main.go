@@ -17,15 +17,12 @@ func main() {
 	fmt.Println("Starting Torchat...")
 
 	client, err := Client.Connect(server)
-	api.SetClient(client)
-
 	if err != nil {
-		fmt.Println(
-			"Connection error:",
-			err,
-		)
+		fmt.Println("Connection error:", err)
 		return
 	}
+
+	api.SetClient(client)
 
 	fmt.Println("Connected")
 
@@ -34,7 +31,7 @@ func main() {
 	http.HandleFunc("/messages", api.MessagesHandler)
 
 	go func() {
-		err = http.ListenAndServe(":8080", nil)
+		err := http.ListenAndServe(":8080", nil)
 		if err != nil {
 			fmt.Println("Couldn't create a local server for API:", err)
 		}
@@ -47,8 +44,7 @@ func main() {
 
 	err = startGui.Run()
 	if err != nil {
-		fmt.Println("Couldn't start GUI. Entering CLI mode:", err)
+		fmt.Println("Couldn't start GUI:", err)
 	}
-
 	CLI.Run(client)
 }
