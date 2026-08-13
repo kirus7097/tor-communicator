@@ -6,14 +6,12 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 const (
-	readTimeout  = 30 * time.Second // time out, important for resources Usage
-	maxLineBytes = 8192             // so attakcer won't send too big data
+	maxLineBytes = 8192 // so attakcer won't send too big data
 )
 
 func main() {

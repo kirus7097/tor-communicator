@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"net"
 	"strings"
-	"time"
 )
 
 func handleConnection(conn net.Conn, database *sql.DB, messageDB *sql.DB) {
@@ -16,8 +15,6 @@ func handleConnection(conn net.Conn, database *sql.DB, messageDB *sql.DB) {
 	reader := bufio.NewReaderSize(conn, 4096)
 	currentUser := ""
 	for {
-		conn.SetReadDeadline(time.Now().Add(readTimeout)) // idle clients get dropped
-
 		bytes, err := readLimitedLine(reader, maxLineBytes)
 		if err != nil {
 			if err != io.EOF {
